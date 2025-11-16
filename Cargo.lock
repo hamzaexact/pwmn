@@ -3,25 +3,6 @@
 version = 4
 
 [[package]]
-name = "SQpm"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "argon2",
- "chacha20poly1305",
- "chrono",
- "copypasta",
- "rand",
- "rmp-serde",
- "rpassword",
- "rustyline",
- "secrecy",
- "serde",
- "uuid",
- "zeroize",
-]
-
-[[package]]
 name = "aead"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -950,6 +931,25 @@ dependencies = [
  "libc",
  "smithay-client-toolkit",
  "wayland-backend",
+]
+
+[[package]]
+name = "sqpm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "argon2",
+ "chacha20poly1305",
+ "chrono",
+ "copypasta",
+ "rand",
+ "rmp-serde",
+ "rpassword",
+ "rustyline",
+ "secrecy",
+ "serde",
+ "uuid",
+ "zeroize",
 ]
 
 [[package]]

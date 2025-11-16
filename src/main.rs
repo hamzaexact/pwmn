@@ -1,14 +1,26 @@
-/// Just copy THIS ENTIRE FILE - nothing else needed
+#![allow(warnings)]
+
 use rustyline::DefaultEditor;
 use rustyline::error::ReadlineError;
 
+mod parser;
+use parser::lexer::{self, *};
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rl = DefaultEditor::new()?;
-
     loop {
         // Read command (handles multi-line)
         let command = match read_command(&mut rl) {
-            Ok(cmd) => cmd,
+            Ok(cmd) => {
+                let k = lexer::Lexer::tokenize(cmd.as_str());
+                match k {
+                    Ok(tokens) => {
+                        println!("{:?}", tokens)
+                    }
+                    Err(E) => println!("ERROR: {}", E),
+                }
+                cmd
+            }
             Err(ReadlineError::Interrupted) => {
                 println!("^C");
                 break;
@@ -34,7 +46,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             break;
         }
     }
-
     Ok(())
 }
 
