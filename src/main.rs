@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Ok(tokens) => {
                         println!("{:?}", tokens)
                     }
-                    Err(E) => println!("ERROR: {}", E),
+                    Err(E) => println!("\nERROR: {}", E),
                 }
                 cmd
             }
@@ -78,7 +78,7 @@ fn read_command(rl: &mut DefaultEditor) -> Result<String, ReadlineError> {
         if buffer.ends_with(';') {
             rl.add_history_entry(&buffer)?;
             // Remove semicolon before returning
-            return Ok(buffer.trim_end_matches(';').trim().to_string());
+            return Ok(buffer.trim().to_string());
         }
 
         // 2. Single keyword commands (don't need semicolon)

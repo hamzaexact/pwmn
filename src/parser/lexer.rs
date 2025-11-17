@@ -1,5 +1,5 @@
-use std::fmt::{Display, Formatter};
-
+use std::fmt::{format, write, Display, Formatter};
+const ERR_LEN:usize = 10;
 pub struct Lexer<'a> {
     input: &'a str,
     chars: std::iter::Peekable<std::str::Chars<'a>>,
@@ -55,6 +55,7 @@ pub enum LexerErr {
     // InvalidSyntax,
     UnexpectedChar(String, usize, Option<usize>),
     InvalidNumber,
+    ExpectedEndOfInput(String, usize, Option<usize>)
 }
 use LexerErr::*;
 
@@ -64,19 +65,24 @@ impl Display for LexerErr {
             Self::EmptyInput => write!(f, "Expected Query, BUT FOUND Nothing"),
             Self::InvalidNumber => write!(f, "Could not parse"),
             Self::UnexpectedChar(input, s_idx, e_idx) => {
-                let mut err_vec = vec!["-"; *s_idx];
-                let  _:Vec<_> = err_vec.iter_mut()
-                    .enumerate()
-                    .map(|(index, char)| if index == *s_idx - 1 {
-                        *char = "-^"
-                }).collect();
-                let str:String = err_vec.into_iter().collect();
-                let err = "Unexpected Character";
-                write!(f, "{} [ {} ]\n{}{}", err,input, " ".repeat(10+err.len()),str)
+                let err_msg = "Unexpected Character near index";
+                write!(f, "{}", lexer_err(input, s_idx, e_idx, err_msg))
             }
+            Self::ExpectedEndOfInput(input, s_idx, e_idx) => write!(f,"{}",lexer_err(input, s_idx, e_idx, "Expected End of Input, Syntax Err near to index")),
             _ => todo!(),
         }
     }
+}
+
+fn lexer_err(input:&str, s_idx: &usize, e_idx: &Option<usize>, err_msg: &str) -> String {
+    let mut err_vec = vec!["-"; *s_idx+1];
+    let  _:Vec<_> = err_vec.iter_mut()
+    .enumerate()
+    .map(|(index, char)| if index == *s_idx {
+        *char = "^"})
+    .collect();
+    let str:String = err_vec.into_iter().collect();
+    format!("{} {}:\n\t\t{}\t\n{}{}",  err_msg, s_idx, input, " ".repeat(16), str)
 }
 
 impl<'a> Lexer<'a> {
@@ -96,6 +102,8 @@ impl<'a> Lexer<'a> {
     fn next_char(&mut self) -> Option<char> {
         let ch = self.chars.next()?;
         self.pos += ch.len_utf8();
+        // println!("pos: {:?}", self.pos);
+        // println!("char: {:?}", ch);
         Some(ch)
     }
 
@@ -116,7 +124,7 @@ impl<'a> Lexer<'a> {
                     let mut string = String::new();
                     while let Some(&ch) = self.chars.peek() {
                         if quote == ch {
-                            self.chars.next();
+                            self.next_char();
                             break;
                         }
                         string.push(ch);
@@ -146,8 +154,15 @@ impl<'a> Lexer<'a> {
                         self.next_char();
                         tokens.push(Tokens::NotEquals);
                     } else {
-                        return  Err(LexerErr::UnexpectedChar(self.input.to_string(), self.pos, None));
+                        return  Err(LexerErr::UnexpectedChar(self.input.to_string(), self.pos-1, None));
                     }
+                }
+                ';' => {
+                    self.next_char();
+                    if self.chars.peek().is_some() {
+                        return Err(LexerErr::ExpectedEndOfInput(self.input.to_string(), self.pos, None));
+                    }
+                    tokens.push(Tokens::Semicolon);
                 }
                 _ => unreachable!(),
             } // end of char matching
