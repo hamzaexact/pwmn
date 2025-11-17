@@ -57,7 +57,7 @@ fn read_command(rl: &mut DefaultEditor) -> Result<String, ReadlineError> {
         line_number += 1;
 
         // Change prompt for continuation lines
-        let prompt = if line_number == 1 {
+        let prompt = if line_number == 1 || buffer.is_empty() {
             "sqpwman> "
         } else {
             "      -> "
