@@ -6,7 +6,7 @@ pub struct Lexer<'a> {
     pos: usize,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum Tokens {
     Add,
     As,
@@ -272,7 +272,7 @@ impl<'a> Lexer<'a> {
 
                 '>' => {
                     self.next_char();
-                    if let Some('=') = self.chars.next() {
+                    if let Some('=') = self.chars.peek() {
                         self.next_char();
                         tokens.push(Tokens::Ge);
                     } else {
@@ -312,7 +312,7 @@ impl<'a> Lexer<'a> {
                     tokens.push(Tokens::Astrisk);
                 }
 
-                _ if char.is_alphabetic() => {
+                _ if char.is_alphabetic() || char == '_' => {
                     let mut word = String::new();
                     while let Some(&ch) = self.chars.peek() {
                         if ch.is_alphabetic() || ch == '_' {
@@ -360,7 +360,6 @@ impl<'a> Lexer<'a> {
                         "FALSE" => Tokens::Bool(false),
                         "AND" => Tokens::And,
                         "OR" => Tokens::Or,
-                        "LOG" => Tokens::Log,
                         _ => Tokens::Identifer(word),
                     };
                     tokens.push(token);
@@ -549,5 +548,39 @@ mod tests {
         let input = r#"PASSWORD "hunter2"#; // Missing closing quote
         let result = Lexer::tokenize(input);
         assert!(result.is_err());
+    }
+    #[test]
+    fn test_negative_number() {
+        let tokens = Lexer::tokenize("LIMIT -5").unwrap();
+        assert_eq!(tokens, vec![
+            Tokens::Limit,
+            Tokens::Number(-5),
+        ]);
+    }
+
+    #[test]
+    fn test_parentheses() {
+        let tokens = Lexer::tokenize("WHERE (age > 18 AND active = true)").unwrap();
+        assert!(tokens.contains(&Tokens::LeftParen));
+        assert!(tokens.contains(&Tokens::RightParen));
+    }
+
+    #[test]
+    fn test_unmatched_parentheses() {
+        assert!(Lexer::tokenize("WHERE (age > 18").is_err());
+        assert!(Lexer::tokenize("WHERE age > 18)").is_err());
+    }
+
+    #[test]
+    fn test_all_comparison_operators() {
+        let tokens = Lexer::tokenize("> >= < <= = !=").unwrap();
+        assert_eq!(tokens, vec![
+            Tokens::Gt,
+            Tokens::Ge,
+            Tokens::Lt,
+            Tokens::Le,
+            Tokens::Equals,
+            Tokens::NotEquals,
+        ]);
     }
 }
