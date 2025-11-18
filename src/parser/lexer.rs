@@ -25,6 +25,7 @@ pub enum Tokens {
     Generate,
     Generated,
     Init,
+    Insert,
     Into,
     List,
     Limit,
@@ -153,32 +154,15 @@ fn err_formatter(
     e_idx: Option<&usize>,
     hint: &str,
 ) -> String {
-    let pointer = format!("{}{}", " ".repeat(s_idx+1), "^",);
+    let pointer = format!("{}{}", " ".repeat(s_idx + 1), "^",);
 
     format!(
         "{}\n\t {}\n\t{}\nHint: {}\n",
         err_title, input, pointer, hint
     )
-
-    // String::new()
 }
 
-fn lexer_err_missed(input: &str, s_idx: &usize, e_idx: &usize, err_msg: &str) -> String {
-    let mut err_vec = vec![" "; *e_idx + 1];
-    let _: Vec<_> = err_vec
-        .iter_mut()
-        .enumerate()
-        .map(|(index, char)| {
-            if (index >= *s_idx && index < *e_idx - 1) {
-                *char = "^"
-            } else if index >= *e_idx - 1 {
-                *char = " "
-            }
-        })
-        .collect();
-    let str: String = err_vec.into_iter().collect();
-    format!("{}\t{}\n\t{}", err_msg, input, str)
-}
+
 
 impl<'a> Lexer<'a> {
     pub fn tokenize(input: &str) -> Result<Vec<Tokens>, LexerErr> {
@@ -196,8 +180,6 @@ impl<'a> Lexer<'a> {
     fn next_char(&mut self) -> Option<char> {
         let ch = self.chars.next()?;
         self.pos += ch.len_utf8();
-        // println!("pos: {:?}", self.pos);
-        // println!("char: {:?}", ch);
         Some(ch)
     }
 
@@ -206,7 +188,6 @@ impl<'a> Lexer<'a> {
         let mut parenth_stack: Vec<usize> = Vec::new();
         let mut quotes_stack: Vec<usize> = Vec::new();
 
-        // let mut chars = self.input.chars().peekable();
         while let Some(&char) = self.chars.peek() {
             match char {
                 ' ' | '\t' | '\n' => {
@@ -345,6 +326,7 @@ impl<'a> Lexer<'a> {
                         "GENERATED" => Tokens::Generated,
                         "INIT" => Tokens::Init,
                         "INTO" => Tokens::Into,
+                        "INSERT" => Tokens::Insert,
                         "LIST" => Tokens::List,
                         "LOG" => Tokens::Log,
                         "LIMIT" => Tokens::Limit,
@@ -414,11 +396,10 @@ impl<'a> Lexer<'a> {
     }
 }
 
-// At the bottom of your lexer.rs file:
 
 #[cfg(test)]
 mod tests {
-    use super::*; // Import your tokenize function and Tokens enum
+    use super::*; 
 
     #[test]
     fn test_simple_command() {
@@ -443,7 +424,7 @@ mod tests {
         assert_eq!(
             tokens,
             vec![
-                Tokens::Add, // Assuming INSERT becomes Into
+                Tokens::Add, 
                 Tokens::Into,
                 Tokens::Identifer("phone".to_string()),
                 Tokens::Password,
@@ -503,7 +484,7 @@ mod tests {
 
     #[test]
     fn test_whitespace_handling() {
-        let input = "CREATE    REGISTER     phone;"; // Extra spaces
+        let input = "CREATE    REGISTER     phone;"; 
         let tokens = Lexer::tokenize(input).unwrap();
 
         assert_eq!(

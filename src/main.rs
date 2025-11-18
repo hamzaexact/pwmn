@@ -55,7 +55,6 @@ fn read_command(rl: &mut DefaultEditor) -> Result<String, ReadlineError> {
     loop {
         line_number += 1;
 
-
         let prompt = if line_number == 1 || buffer.is_empty() {
             "sqpwman> "
         } else {
@@ -83,6 +82,5 @@ fn read_command(rl: &mut DefaultEditor) -> Result<String, ReadlineError> {
                 return Ok(buffer);
             }
         }
-
     }
 }
