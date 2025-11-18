@@ -9,7 +9,6 @@ use parser::lexer::{self, *};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rl = DefaultEditor::new()?;
     loop {
-        // Read command (handles multi-line)
         let command = match read_command(&mut rl) {
             Ok(cmd) => {
                 let k = lexer::Lexer::tokenize(cmd.as_str());
@@ -56,7 +55,7 @@ fn read_command(rl: &mut DefaultEditor) -> Result<String, ReadlineError> {
     loop {
         line_number += 1;
 
-        // Change prompt for continuation lines
+
         let prompt = if line_number == 1 || buffer.is_empty() {
             "sqpwman> "
         } else {
@@ -66,22 +65,17 @@ fn read_command(rl: &mut DefaultEditor) -> Result<String, ReadlineError> {
         // Read one line
         let line = rl.readline(prompt)?;
 
-        // Add to buffer with space separator
         if !buffer.is_empty() {
             buffer.push(' ');
         }
         buffer.push_str(line.trim());
 
-        // Check if command is complete
-
-        // 1. Ends with semicolon? Done!
         if buffer.ends_with(';') {
             rl.add_history_entry(&buffer)?;
-            // Remove semicolon before returning
+
             return Ok(buffer.trim().to_string());
         }
 
-        // 2. Single keyword commands (don't need semicolon)
         if line_number == 1 {
             let upper = buffer.trim().to_uppercase();
             if matches!(upper.as_str(), "QUIT" | "EXIT" | "HELP" | "STATUS") {
@@ -90,6 +84,5 @@ fn read_command(rl: &mut DefaultEditor) -> Result<String, ReadlineError> {
             }
         }
 
-        // Otherwise, continue reading next line
     }
 }

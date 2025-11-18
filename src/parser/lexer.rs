@@ -49,6 +49,7 @@ pub enum Tokens {
     Log,
 
     And,
+    Comma,
     Or,
     Ge,
     Gt,
@@ -64,13 +65,11 @@ pub enum Tokens {
 
 #[derive(Debug)]
 pub enum LexerErr {
-    UnexpectedEndOfInput,
-    // InvalidSyntax,
-    UnexpectedChar(String, usize, Option<usize>),
-    InvalidNumber,
-    ExpectedEndOfInput(String, usize, Option<usize>),
-    MissingChar(String, usize, usize, String),
-    SyntaxErr(String, usize, usize, String),
+    InvalidNumber(String, usize),
+    UnexpectedChar(String, usize, char),
+    UnterminatedString(String, usize),
+    UnterminatedParenthsis(String, usize),
+    UnmatchedClosingParenthesis(String, usize),
 }
 use LexerErr::*;
 use rustyline::completion::Quote;
@@ -78,67 +77,94 @@ use rustyline::completion::Quote;
 impl Display for LexerErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::InvalidNumber => write!(f, "Could not parse"),
-            Self::UnexpectedChar(input, s_idx, e_idx) => {
-                let err_msg = "Unexpected Character near index";
-                write!(f, "{}", lexer_err(input, s_idx, e_idx, err_msg))
-            }
-            Self::ExpectedEndOfInput(input, s_idx, e_idx) => write!(
-                f,
-                "{}",
-                lexer_err(
-                    input,
-                    s_idx,
-                    e_idx,
-                    "Expected End of Input, Syntax Err near to index"
-                )
-            ),
-
-            Self::MissingChar(input, s_idx, e_idx, missed) => {
-                let err_msg = format!("a <{}> missed here:\n", missed);
+            Self::InvalidNumber(input, pos) => {
                 write!(
                     f,
                     "{}",
-                    lexer_err_missed(input, s_idx, e_idx, err_msg.as_str())
+                    err_formatter(
+                        &format!("Invalid number at position {}", pos),
+                        input,
+                        *pos,
+                        None,
+                        "Number too large or malformed"
+                    )
                 )
             }
-
-            Self::SyntaxErr(input, s_idx, e_idx, custom_err_msg) => {
+            Self::UnexpectedChar(input, s_idx, char) => {
+                let err_title = format!("Unexpected Character '{}' at position {}", char, s_idx);
+                let hint = "Expected alphanumeric, operator, or keyword";
                 write!(
                     f,
                     "{}",
-                    lexer_err_missed(input, s_idx, e_idx, custom_err_msg)
+                    err_formatter(err_title.as_str(), input, *s_idx, None, hint)
                 )
             }
+            Self::UnterminatedString(input, idx) => {
+                write!(
+                    f,
+                    "{}",
+                    err_formatter(
+                        &format!("Unterminated string at position {}", idx),
+                        input,
+                        *idx,
+                        None,
+                        "Expected closing quote"
+                    )
+                )
+            }
+
+            Self::UnterminatedParenthsis(input, idx) => {
+                write!(
+                    f,
+                    "{}",
+                    err_formatter(
+                        &format!("Unclosed parenthesis at position {}", idx),
+                        input,
+                        *idx,
+                        None,
+                        "Expected ')'"
+                    )
+                )
+            }
+
+            Self::UnmatchedClosingParenthesis(input, idx) => {
+                write!(
+                    f,
+                    "{}",
+                    err_formatter(
+                        &format!("Unmatched ')' at position {}", idx),
+                        input,
+                        *idx,
+                        None,
+                        "No matching '(' found"
+                    )
+                )
+            }
+
             _ => todo!(),
         }
     }
 }
 
-fn lexer_err(input: &str, s_idx: &usize, e_idx: &Option<usize>, err_msg: &str) -> String {
-    let mut err_vec = vec!["-"; *s_idx + 1];
-    let _: Vec<_> = err_vec
-        .iter_mut()
-        .enumerate()
-        .map(|(index, char)| {
-            if index == *s_idx {
-                *char = "^"
-            }
-        })
-        .collect();
-    let str: String = err_vec.into_iter().collect();
+fn err_formatter(
+    err_title: &str,
+    input: &str,
+    s_idx: usize,
+    e_idx: Option<&usize>,
+    hint: &str,
+) -> String {
+    let pointer = format!("{}{}", " ".repeat(s_idx+1), "^",);
+
     format!(
-        "{} {}:\n\t\t{}\t\n{}{}",
-        err_msg,
-        s_idx,
-        input,
-        " ".repeat(16),
-        str
+        "{}\n\t {}\n\t{}\nHint: {}\n",
+        err_title, input, pointer, hint
     )
+
+    // String::new()
 }
 
 fn lexer_err_missed(input: &str, s_idx: &usize, e_idx: &usize, err_msg: &str) -> String {
-    let mut err_vec = vec!["-"; *e_idx + 1];
+    let mut err_vec = vec![" "; *e_idx + 1];
     let _: Vec<_> = err_vec
         .iter_mut()
         .enumerate()
@@ -154,22 +180,6 @@ fn lexer_err_missed(input: &str, s_idx: &usize, e_idx: &usize, err_msg: &str) ->
     format!("{}\t{}\n\t{}", err_msg, input, str)
 }
 
-fn lexer_syn_err(input: &str, s_idx: &usize, e_idx: &usize, err_msg: &str) -> String {
-    let mut err_vec = vec!["-"; *e_idx + 1];
-    let _: Vec<_> = err_vec
-        .iter_mut()
-        .enumerate()
-        .map(|(index, char)| {
-            if (index >= *s_idx && index < *e_idx - 1) {
-                *char = "^"
-            } else if index >= *e_idx - 1 {
-                *char = " "
-            }
-        })
-        .collect();
-    let str: String = err_vec.into_iter().collect();
-    format!("{}\t{}\n\t{}", err_msg, input, str)
-}
 impl<'a> Lexer<'a> {
     pub fn tokenize(input: &str) -> Result<Vec<Tokens>, LexerErr> {
         let mut lexer = Lexer {
@@ -183,7 +193,6 @@ impl<'a> Lexer<'a> {
             Err(e) => Err(e),
         }
     }
-
     fn next_char(&mut self) -> Option<char> {
         let ch = self.chars.next()?;
         self.pos += ch.len_utf8();
@@ -219,11 +228,9 @@ impl<'a> Lexer<'a> {
                     } // end of the inner while loop
 
                     if !quotes_stack.is_empty() {
-                        return Err(LexerErr::SyntaxErr(
+                        return Err(LexerErr::UnterminatedString(
                             self.input.to_string(),
                             quotes_stack.pop().unwrap(),
-                            self.pos,
-                            "a <quote> was missed here:\n".to_string(),
                         ));
                     }
 
@@ -253,20 +260,19 @@ impl<'a> Lexer<'a> {
                     } else {
                         return Err(LexerErr::UnexpectedChar(
                             self.input.to_string(),
-                            self.pos - 1,
-                            None,
+                            self.pos,
+                            char,
                         ));
                     }
                 }
+
+                ',' => {
+                    self.next_char();
+                    tokens.push(Tokens::Comma);
+                }
                 ';' => {
                     self.next_char();
-                    if self.chars.peek().is_some() {
-                        return Err(LexerErr::ExpectedEndOfInput(
-                            self.input.to_string(),
-                            self.pos,
-                            None,
-                        ));
-                    }
+
                     tokens.push(Tokens::Semicolon);
                 }
 
@@ -290,11 +296,9 @@ impl<'a> Lexer<'a> {
                 }
                 ')' => {
                     if parenth_stack.is_empty() {
-                        return Err(LexerErr::SyntaxErr(
+                        return Err(LexerErr::UnmatchedClosingParenthesis(
                             self.input.to_string(),
                             self.pos,
-                            self.input.len(),
-                            "Unmatched Pairs of Parenthesess\n".to_string(),
                         ));
                     }
                     parenth_stack.pop();
@@ -364,20 +368,21 @@ impl<'a> Lexer<'a> {
                     };
                     tokens.push(token);
                 }
-                _ => return Err(LexerErr::UnexpectedChar(self.input.to_string(), self.pos, None))
+                _ => {
+                    return Err(LexerErr::UnexpectedChar(
+                        self.input.to_string(),
+                        self.pos,
+                        char,
+                    ));
+                }
             } // end of char matching
         } // end of the outer while loop
 
         if !parenth_stack.is_empty() {
-            return Err(LexerErr::SyntaxErr(self.input.to_string(), parenth_stack.pop().unwrap(), self.pos, 
-                "a Parenthesess Pair was forget to be closed\n".to_string())
-            )
-        }
-
-        if !quotes_stack.is_empty() {
-            return Err(LexerErr::SyntaxErr(self.input.to_string(), quotes_stack.pop().unwrap(), self.pos, 
-                "a quote pair was forget to be closed\n".to_string())
-            )
+            return Err(LexerErr::UnterminatedParenthsis(
+                self.input.to_string(),
+                parenth_stack.pop().unwrap(),
+            ));
         }
 
         Ok(tokens)
@@ -404,7 +409,7 @@ impl<'a> Lexer<'a> {
             .map_err(|_| LexerErr::InvalidNumber);
         match number {
             Ok(n) => Ok(Tokens::Number(n)),
-            Err(e) => Err(LexerErr::InvalidNumber),
+            Err(e) => Err(LexerErr::InvalidNumber(self.input.to_string(), self.pos)),
         }
     }
 }
@@ -552,10 +557,7 @@ mod tests {
     #[test]
     fn test_negative_number() {
         let tokens = Lexer::tokenize("LIMIT -5").unwrap();
-        assert_eq!(tokens, vec![
-            Tokens::Limit,
-            Tokens::Number(-5),
-        ]);
+        assert_eq!(tokens, vec![Tokens::Limit, Tokens::Number(-5),]);
     }
 
     #[test]
@@ -574,13 +576,16 @@ mod tests {
     #[test]
     fn test_all_comparison_operators() {
         let tokens = Lexer::tokenize("> >= < <= = !=").unwrap();
-        assert_eq!(tokens, vec![
-            Tokens::Gt,
-            Tokens::Ge,
-            Tokens::Lt,
-            Tokens::Le,
-            Tokens::Equals,
-            Tokens::NotEquals,
-        ]);
+        assert_eq!(
+            tokens,
+            vec![
+                Tokens::Gt,
+                Tokens::Ge,
+                Tokens::Lt,
+                Tokens::Le,
+                Tokens::Equals,
+                Tokens::NotEquals,
+            ]
+        );
     }
 }
