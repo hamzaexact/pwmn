@@ -3,8 +3,8 @@
 use rustyline::DefaultEditor;
 use rustyline::error::ReadlineError;
 
-mod parser;
-use parser::lexer::{self, *};
+mod interpreter;
+use interpreter::lexer::{self, *};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rl = DefaultEditor::new()?;
