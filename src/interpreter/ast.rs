@@ -1,6 +1,6 @@
 pub enum Expr {
     Number(i32),
-    String(String),
+    StringLitteral(String),
     Bool(bool),
     Identifier(String),
 
