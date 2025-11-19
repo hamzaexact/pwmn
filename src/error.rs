@@ -1,76 +1,78 @@
 use std::fmt::{Debug, Display, Formatter};
 
+use crate::interpreter::Span;
+
 #[derive(Debug)]
 pub enum LexerErr {
-    InvalidNumber(String, usize, usize),
-    UnexpectedChar(String, usize, char),
-    UnterminatedString(String, usize),
-    UnterminatedParenthsis(String, usize),
-    UnmatchedClosingParenthesis(String, usize),
+    InvalidNumber(String, Span),
+    UnexpectedChar(String, char, Span),
+    UnterminatedString(String, Span),
+    UnterminatedParenthsis(String, Span),
+    UnmatchedClosingParenthesis(String, Span)
 }
 use LexerErr::*;
 
 impl Display for LexerErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::InvalidNumber(input, s_idx, e_idx) => {
+            Self::InvalidNumber(input,  span)=> {
                 write!(
                     f,
                     "{}",
                     err_formatter(
-                        &format!("Invalid number from position {} to {}", s_idx, e_idx),
+                        &format!("Invalid number from position {} to {}", span.start, span.end),
                         input,
-                        *s_idx,
-                        Some(e_idx),
+                        span.start,
+                        Some(&span.end),
                         "Number too large or malformed"
                     )
                 )
             }
-            Self::UnexpectedChar(input, s_idx, char) => {
-                let err_title = format!("Unexpected Character '{}' at position {}", char, s_idx);
+            Self::UnexpectedChar(input, char, span) => {
+                let err_title = format!("Unexpected Character '{}' at position {}", char, span.start);
                 let hint = "Expected alphanumeric, operator, or keyword";
                 write!(
                     f,
                     "{}",
-                    err_formatter(err_title.as_str(), input, *s_idx, None, hint)
+                    err_formatter(err_title.as_str(), input, span.start, None, hint)
                 )
             }
-            Self::UnterminatedString(input, idx) => {
+            Self::UnterminatedString(input, span) => {
                 write!(
                     f,
                     "{}",
                     err_formatter(
-                        &format!("Unterminated string at position {}", idx),
+                        &format!("Unterminated string at position {}", span.start),
                         input,
-                        *idx,
+                        span.start,
                         None,
                         "Expected closing quote"
                     )
                 )
             }
 
-            Self::UnterminatedParenthsis(input, idx) => {
+            Self::UnterminatedParenthsis(input, span) => {
                 write!(
                     f,
                     "{}",
                     err_formatter(
-                        &format!("Unclosed parenthesis at position {}", idx),
+                        &format!("Unclosed parenthesis at position {}", span.start),
                         input,
-                        *idx,
+                        span.start,
                         None,
                         "Expected ')'"
                     )
                 )
             }
 
-            Self::UnmatchedClosingParenthesis(input, idx) => {
+            Self::UnmatchedClosingParenthesis(input, span) => {
                 write!(
                     f,
                     "{}",
                     err_formatter(
-                        &format!("Unmatched ')' at position {}", idx),
+                        &format!("Unmatched ')' at position {}", span.start),
                         input,
-                        *idx,
+                        span.start,
                         None,
                         "No matching '(' found"
                     )

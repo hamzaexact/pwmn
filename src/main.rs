@@ -5,7 +5,7 @@ use rustyline::error::ReadlineError;
 mod error;
 mod interpreter;
 use interpreter::lexer::{self, *};
-use interpreter::parser::Parser;
+// use interpreter::parser::Parser;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rl = DefaultEditor::new()?;
@@ -15,7 +15,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let k = lexer::Lexer::tokenize(cmd.as_str());
                 match k {
                     Ok(tokens) => {
-                        Parser::parse(tokens);
+                        // Parser::parse(tokens);
+                        dbg!(tokens);
                     }
                     Err(E) => println!("\nERROR: {}", E),
                 }
