@@ -1,3 +1,4 @@
+use crate::error::LexerErr;
 use std::fmt::{Display, Formatter, format, write};
 const ERR_LEN: usize = 10;
 pub struct Lexer<'a> {
@@ -63,106 +64,6 @@ pub enum Tokens {
     RightParen,
     Astrisk,
 }
-
-#[derive(Debug)]
-pub enum LexerErr {
-    InvalidNumber(String, usize),
-    UnexpectedChar(String, usize, char),
-    UnterminatedString(String, usize),
-    UnterminatedParenthsis(String, usize),
-    UnmatchedClosingParenthesis(String, usize),
-}
-use LexerErr::*;
-use rustyline::completion::Quote;
-
-impl Display for LexerErr {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::InvalidNumber(input, pos) => {
-                write!(
-                    f,
-                    "{}",
-                    err_formatter(
-                        &format!("Invalid number at position {}", pos),
-                        input,
-                        *pos,
-                        None,
-                        "Number too large or malformed"
-                    )
-                )
-            }
-            Self::UnexpectedChar(input, s_idx, char) => {
-                let err_title = format!("Unexpected Character '{}' at position {}", char, s_idx);
-                let hint = "Expected alphanumeric, operator, or keyword";
-                write!(
-                    f,
-                    "{}",
-                    err_formatter(err_title.as_str(), input, *s_idx, None, hint)
-                )
-            }
-            Self::UnterminatedString(input, idx) => {
-                write!(
-                    f,
-                    "{}",
-                    err_formatter(
-                        &format!("Unterminated string at position {}", idx),
-                        input,
-                        *idx,
-                        None,
-                        "Expected closing quote"
-                    )
-                )
-            }
-
-            Self::UnterminatedParenthsis(input, idx) => {
-                write!(
-                    f,
-                    "{}",
-                    err_formatter(
-                        &format!("Unclosed parenthesis at position {}", idx),
-                        input,
-                        *idx,
-                        None,
-                        "Expected ')'"
-                    )
-                )
-            }
-
-            Self::UnmatchedClosingParenthesis(input, idx) => {
-                write!(
-                    f,
-                    "{}",
-                    err_formatter(
-                        &format!("Unmatched ')' at position {}", idx),
-                        input,
-                        *idx,
-                        None,
-                        "No matching '(' found"
-                    )
-                )
-            }
-
-            _ => todo!(),
-        }
-    }
-}
-
-fn err_formatter(
-    err_title: &str,
-    input: &str,
-    s_idx: usize,
-    e_idx: Option<&usize>,
-    hint: &str,
-) -> String {
-    let pointer = format!("{}{}", " ".repeat(s_idx + 1), "^",);
-
-    format!(
-        "{}\n\t {}\n\t{}\nHint: {}\n",
-        err_title, input, pointer, hint
-    )
-}
-
-
 
 impl<'a> Lexer<'a> {
     pub fn tokenize(input: &str) -> Result<Vec<Tokens>, LexerErr> {
@@ -372,12 +273,13 @@ impl<'a> Lexer<'a> {
     //
 
     fn extract_number(&mut self, signed: bool) -> Result<Tokens, LexerErr> {
+        let mut s_idx: usize = self.pos;
         let mut str_number = if signed {
+            s_idx = self.pos - 1;
             String::from('-')
         } else {
             String::new()
         };
-        // let mut chars = self.input.chars().peekable();
         while let Some(n) = self.chars.peek() {
             if n.is_digit(10) {
                 str_number.push(*n);
@@ -391,15 +293,18 @@ impl<'a> Lexer<'a> {
             .map_err(|_| LexerErr::InvalidNumber);
         match number {
             Ok(n) => Ok(Tokens::Number(n)),
-            Err(e) => Err(LexerErr::InvalidNumber(self.input.to_string(), self.pos)),
+            Err(e) => Err(LexerErr::InvalidNumber(
+                self.input.to_string(),
+                s_idx,
+                self.pos,
+            )),
         }
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use super::*; 
+    use super::*;
 
     #[test]
     fn test_simple_command() {
@@ -424,7 +329,7 @@ mod tests {
         assert_eq!(
             tokens,
             vec![
-                Tokens::Add, 
+                Tokens::Add,
                 Tokens::Into,
                 Tokens::Identifer("phone".to_string()),
                 Tokens::Password,
@@ -484,7 +389,7 @@ mod tests {
 
     #[test]
     fn test_whitespace_handling() {
-        let input = "CREATE    REGISTER     phone;"; 
+        let input = "CREATE    REGISTER     phone;";
         let tokens = Lexer::tokenize(input).unwrap();
 
         assert_eq!(
