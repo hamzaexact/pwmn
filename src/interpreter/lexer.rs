@@ -340,176 +340,231 @@ impl<'a> Lexer<'a> {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-//     #[test]
-//     fn test_simple_command() {
-//         let input = "CREATE REGISTER phone;";
-//         let tokens = Lexer::tokenize(input).unwrap();
+    // Helper to create token with span
+    fn tok(kind: TokenKind, start: usize, end: usize) -> Token {
+        Token {
+            kind,
+            span: Span { start, end },
+        }
+    }
 
-//         assert_eq!(
-//             tokens,
-//             vec![
-//                 Tokens::Create,
-//                 Tokens::Register,
-//                 Tokens::Identifer("phone".to_string()),
-//                 Tokens::Semicolon,
-//             ]
-//         );
-//     }
+    #[test]
+    fn test_simple_command() {
+        let input = "CREATE REGISTER phone;";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert_eq!(tokens.len(), 4);
+        assert_eq!(tokens[0].kind, TokenKind::Create);
+        assert_eq!(tokens[1].kind, TokenKind::Register);
+        assert_eq!(tokens[2].kind, TokenKind::Identifier("phone".to_string()));
+        assert_eq!(tokens[3].kind, TokenKind::Semicolon);
+    }
 
-//     #[test]
-//     fn test_string_literal() {
-//         let input = r#"ADD INTO phone PASSWORD "hunter2";"#;
-//         let tokens = Lexer::tokenize(input).unwrap();
-//         assert_eq!(
-//             tokens,
-//             vec![
-//                 Tokens::Add,
-//                 Tokens::Into,
-//                 Tokens::Identifer("phone".to_string()),
-//                 Tokens::Password,
-//                 Tokens::String("hunter2".to_string()),
-//                 Tokens::Semicolon,
-//             ]
-//         );
-//     }
+    #[test]
+    fn test_string_literal() {
+        let input = r#"ADD INTO phone PASSWORD "hunter2";"#;
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert_eq!(tokens.len(), 6);
+        assert_eq!(tokens[0].kind, TokenKind::Add);
+        assert_eq!(tokens[1].kind, TokenKind::Into);
+        assert_eq!(tokens[2].kind, TokenKind::Identifier("phone".to_string()));
+        assert_eq!(tokens[3].kind, TokenKind::Password);
+        assert_eq!(tokens[4].kind, TokenKind::String("hunter2".to_string()));
+        assert_eq!(tokens[5].kind, TokenKind::Semicolon);
+    }
 
-//     #[test]
-//     fn test_numbers() {
-//         let input = "LIMIT 50";
-//         let tokens = Lexer::tokenize(input).unwrap();
+    #[test]
+    fn test_numbers() {
+        let input = "LIMIT 50";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert_eq!(tokens.len(), 2);
+        assert_eq!(tokens[0].kind, TokenKind::Limit);
+        assert_eq!(tokens[1].kind, TokenKind::Number(50));
+    }
 
-//         assert_eq!(tokens, vec![Tokens::Limit, Tokens::Number(50),]);
-//     }
+    #[test]
+    fn test_negative_number() {
+        let input = "LIMIT -5";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert_eq!(tokens.len(), 2);
+        assert_eq!(tokens[0].kind, TokenKind::Limit);
+        assert_eq!(tokens[1].kind, TokenKind::Number(-5));
+    }
 
-//     #[test]
-//     fn test_operators() {
-//         let input = "WHERE age >= 18 AND active = true";
-//         let tokens = Lexer::tokenize(input).unwrap();
+    #[test]
+    fn test_operators() {
+        let input = "WHERE age >= 18 AND active = true";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert_eq!(tokens.len(), 8);
+        assert_eq!(tokens[0].kind, TokenKind::Where);
+        assert_eq!(tokens[1].kind, TokenKind::Identifier("age".to_string()));
+        assert_eq!(tokens[2].kind, TokenKind::Ge);
+        assert_eq!(tokens[3].kind, TokenKind::Number(18));
+        assert_eq!(tokens[4].kind, TokenKind::And);
+        assert_eq!(tokens[5].kind, TokenKind::Identifier("active".to_string()));
+        assert_eq!(tokens[6].kind, TokenKind::Equals);
+        assert_eq!(tokens[7].kind, TokenKind::Bool(true));
+    }
 
-//         assert_eq!(
-//             tokens,
-//             vec![
-//                 Tokens::Where,
-//                 Tokens::Identifer("age".to_string()),
-//                 Tokens::Ge,
-//                 Tokens::Number(18),
-//                 Tokens::And,
-//                 Tokens::Identifer("active".to_string()),
-//                 Tokens::Equals,
-//                 Tokens::Bool(true),
-//             ]
-//         );
-//     }
+    #[test]
+    fn test_all_comparison_operators() {
+        let input = "> >= < <= = !=";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert_eq!(tokens.len(), 6);
+        assert_eq!(tokens[0].kind, TokenKind::Gt);
+        assert_eq!(tokens[1].kind, TokenKind::Ge);
+        assert_eq!(tokens[2].kind, TokenKind::Lt);
+        assert_eq!(tokens[3].kind, TokenKind::Le);
+        assert_eq!(tokens[4].kind, TokenKind::Equals);
+        assert_eq!(tokens[5].kind, TokenKind::NotEquals);
+    }
 
-//     #[test]
-//     fn test_complex_query() {
-//         let input = "SELECT * FROM phone WHERE used_for CONTAINS \"github\";";
-//         let tokens = Lexer::tokenize(input).unwrap();
-//         assert_eq!(
-//             tokens,
-//             vec![
-//                 Tokens::Select,
-//                 Tokens::Astrisk,
-//                 Tokens::From,
-//                 Tokens::Identifer("phone".to_string()),
-//                 Tokens::Where,
-//                 Tokens::Identifer("used_for".to_string()),
-//                 Tokens::Contains,
-//                 Tokens::String("github".to_string()),
-//                 Tokens::Semicolon,
-//             ]
-//         );
-//     }
+    #[test]
+    fn test_complex_query() {
+        let input = "SELECT * FROM phone WHERE used_for CONTAINS \"github\";";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert_eq!(tokens.len(), 9);
+        assert_eq!(tokens[0].kind, TokenKind::Select);
+        assert_eq!(tokens[1].kind, TokenKind::Astrisk);
+        assert_eq!(tokens[2].kind, TokenKind::From);
+        assert_eq!(tokens[3].kind, TokenKind::Identifier("phone".to_string()));
+        assert_eq!(tokens[4].kind, TokenKind::Where);
+        assert_eq!(tokens[5].kind, TokenKind::Identifier("used_for".to_string()));
+        assert_eq!(tokens[6].kind, TokenKind::Contains);
+        assert_eq!(tokens[7].kind, TokenKind::String("github".to_string()));
+        assert_eq!(tokens[8].kind, TokenKind::Semicolon);
+    }
 
-//     #[test]
-//     fn test_whitespace_handling() {
-//         let input = "CREATE    REGISTER     phone;";
-//         let tokens = Lexer::tokenize(input).unwrap();
+    #[test]
+    fn test_whitespace_handling() {
+        let input = "CREATE    REGISTER     phone;";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert_eq!(tokens.len(), 4);
+        assert_eq!(tokens[0].kind, TokenKind::Create);
+        assert_eq!(tokens[1].kind, TokenKind::Register);
+        assert_eq!(tokens[2].kind, TokenKind::Identifier("phone".to_string()));
+        assert_eq!(tokens[3].kind, TokenKind::Semicolon);
+    }
 
-//         assert_eq!(
-//             tokens,
-//             vec![
-//                 Tokens::Create,
-//                 Tokens::Register,
-//                 Tokens::Identifer("phone".to_string()),
-//                 Tokens::Semicolon,
-//             ]
-//         );
-//     }
+    #[test]
+    fn test_case_insensitive_keywords() {
+        let input = "create REGISTER Phone;";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert_eq!(tokens.len(), 4);
+        assert_eq!(tokens[0].kind, TokenKind::Create);
+        assert_eq!(tokens[1].kind, TokenKind::Register);
+        assert_eq!(tokens[2].kind, TokenKind::Identifier("Phone".to_string()));
+        assert_eq!(tokens[3].kind, TokenKind::Semicolon);
+    }
 
-//     #[test]
-//     fn test_case_insensitive() {
-//         let input = "create REGISTER Phone;";
-//         let tokens = Lexer::tokenize(input).unwrap();
+    #[test]
+    fn test_parentheses() {
+        let input = "WHERE (age > 18 AND active = true)";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert!(tokens.iter().any(|t| t.kind == TokenKind::LeftParen));
+        assert!(tokens.iter().any(|t| t.kind == TokenKind::RightParen));
+    }
 
-//         assert_eq!(
-//             tokens,
-//             vec![
-//                 Tokens::Create,
-//                 Tokens::Register,
-//                 Tokens::Identifer("Phone".to_string()), // Identifiers keep original case
-//                 Tokens::Semicolon,
-//             ]
-//         );
-//     }
+    #[test]
+    fn test_comma() {
+        let input = "SELECT id, name, password FROM phone;";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert!(tokens.iter().any(|t| t.kind == TokenKind::Comma));
+    }
 
-//     #[test]
-//     fn test_error_invalid_character() {
-//         let input = "CREATE REGISTER phone@;"; // @ is invalid
-//         let result = Lexer::tokenize(input);
-//         assert!(result.is_err());
-//     }
+    #[test]
+    fn test_empty_input() {
+        let input = "";
+        let tokens = Lexer::tokenize(input).unwrap();
+        assert_eq!(tokens.len(), 0);
+    }
 
-//     #[test]
-//     fn test_empty_input() {
-//         let input = "";
-//         let tokens = Lexer::tokenize(input).unwrap();
+    #[test]
+    fn test_error_invalid_character() {
+        let input = "CREATE REGISTER phone@;";
+        let result = Lexer::tokenize(input);
+        assert!(result.is_err());
+    }
 
-//         assert_eq!(tokens, vec![]);
-//     }
+    #[test]
+    fn test_error_unterminated_string() {
+        let input = r#"PASSWORD "hunter2"#;
+        let result = Lexer::tokenize(input);
+        assert!(result.is_err());
+    }
 
-//     #[test]
-//     fn test_unterminated_string() {
-//         let input = r#"PASSWORD "hunter2"#; // Missing closing quote
-//         let result = Lexer::tokenize(input);
-//         assert!(result.is_err());
-//     }
-//     #[test]
-//     fn test_negative_number() {
-//         let tokens = Lexer::tokenize("LIMIT -5").unwrap();
-//         assert_eq!(tokens, vec![Tokens::Limit, Tokens::Number(-5),]);
-//     }
+    #[test]
+    fn test_error_unmatched_opening_paren() {
+        let input = "WHERE (age > 18";
+        let result = Lexer::tokenize(input);
+        assert!(result.is_err());
+    }
 
-//     #[test]
-//     fn test_parentheses() {
-//         let tokens = Lexer::tokenize("WHERE (age > 18 AND active = true)").unwrap();
-//         assert!(tokens.contains(&Tokens::LeftParen));
-//         assert!(tokens.contains(&Tokens::RightParen));
-//     }
+    #[test]
+    fn test_error_unmatched_closing_paren() {
+        let input = "WHERE age > 18)";
+        let result = Lexer::tokenize(input);
+        assert!(result.is_err());
+    }
 
-//     #[test]
-//     fn test_unmatched_parentheses() {
-//         assert!(Lexer::tokenize("WHERE (age > 18").is_err());
-//         assert!(Lexer::tokenize("WHERE age > 18)").is_err());
-//     }
+    #[test]
+    fn test_span_tracking() {
+        let input = "CREATE REGISTER phone;";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        // CREATE at position 0-6
+        assert_eq!(tokens[0].span.start, 0);
+        assert_eq!(tokens[0].span.end, 6);
+        
+        // REGISTER at position 7-15
+        assert_eq!(tokens[1].span.start, 7);
+        assert_eq!(tokens[1].span.end, 15);
+    }
 
-//     #[test]
-//     fn test_all_comparison_operators() {
-//         let tokens = Lexer::tokenize("> >= < <= = !=").unwrap();
-//         assert_eq!(
-//             tokens,
-//             vec![
-//                 Tokens::Gt,
-//                 Tokens::Ge,
-//                 Tokens::Lt,
-//                 Tokens::Le,
-//                 Tokens::Equals,
-//                 Tokens::NotEquals,
-//             ]
-//         );
-//     }
-// }
+    #[test]
+    fn test_underscore_in_identifier() {
+        let input = "my_register_name";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].kind, TokenKind::Identifier("my_register_name".to_string()));
+    }
+
+    #[test]
+    fn test_boolean_literals() {
+        let input = "true AND false";
+        let tokens = Lexer::tokenize(input).unwrap();
+        
+        assert_eq!(tokens.len(), 3);
+        assert_eq!(tokens[0].kind, TokenKind::Bool(true));
+        assert_eq!(tokens[1].kind, TokenKind::And);
+        assert_eq!(tokens[2].kind, TokenKind::Bool(false));
+    }
+
+    #[test]
+    fn test_complex_nested_query() {
+        let input = "WHERE (used_for CONTAINS \"aws\" OR used_for CONTAINS \"s3\") AND active = true;";
+        let result = Lexer::tokenize(input);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        
+        // Verify parentheses are balanced
+        let open_count = tokens.iter().filter(|t| t.kind == TokenKind::LeftParen).count();
+        let close_count = tokens.iter().filter(|t| t.kind == TokenKind::RightParen).count();
+        assert_eq!(open_count, close_count);
+    }
+}
