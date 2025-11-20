@@ -1,40 +1,68 @@
-use std::fmt::{Debug, Display, Formatter};
-
-use crate::interpreter::Span;
+use crate::interpreter::token_name;
+use crate::interpreter::{Span, lexer::TokenKind};
+use std::fmt::{Debug, Display, Formatter, format};
 
 #[derive(Debug)]
 pub enum LexerErr {
-    InvalidNumber(String, Span),
+    InvalidNumber { input: String, span: Span },
     UnexpectedChar(String, char, Span),
     UnterminatedString(String, Span),
     UnterminatedParenthsis(String, Span),
-    UnmatchedClosingParenthesis(String, Span)
+    UnmatchedClosingParenthesis(String, Span),
 }
-use LexerErr::*;
 
-impl Display for LexerErr {
+#[derive(Debug, Clone)]
+pub enum ParserErr {
+    UnexpectedEndOfExpression {
+        input: String,
+        tokind: TokenKind,
+        span: Span,
+    },
+    TypeMismatch {
+        input: String,
+        expectedkind: TokenKind,
+        givenkind: TokenKind,
+        span: Span,
+    },
+}
+
+pub enum ParserToken {
+    Expression,
+    Identifier,
+    Keyword,
+}
+
+use LexerErr::*;
+use ParserErr::*;
+use ParserToken::*;
+
+impl<'a> Display for LexerErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::InvalidNumber(input,  span)=> {
+            Self::InvalidNumber { input, span } => {
                 write!(
                     f,
                     "{}",
                     err_formatter(
-                        &format!("Invalid number from position {} to {}", span.start, span.end),
+                        &format!(
+                            "Invalid number from position {} to {}",
+                            span.start, span.end
+                        ),
                         input,
                         span.start,
                         Some(&span.end),
-                        "Number too large or malformed"
+                        Some("Number too large or malformed")
                     )
                 )
             }
             Self::UnexpectedChar(input, char, span) => {
-                let err_title = format!("Unexpected Character '{}' at position {}", char, span.start);
+                let err_title =
+                    format!("Unexpected Character '{}' at position {}", char, span.start);
                 let hint = "Expected alphanumeric, operator, or keyword";
                 write!(
                     f,
                     "{}",
-                    err_formatter(err_title.as_str(), input, span.start, None, hint)
+                    err_formatter(err_title.as_str(), input, span.start, None, Some(hint))
                 )
             }
             Self::UnterminatedString(input, span) => {
@@ -46,7 +74,7 @@ impl Display for LexerErr {
                         input,
                         span.start,
                         None,
-                        "Expected closing quote"
+                        Some("Expected closing quote")
                     )
                 )
             }
@@ -60,7 +88,7 @@ impl Display for LexerErr {
                         input,
                         span.start,
                         None,
-                        "Expected ')'"
+                        Some("Expected ')'")
                     )
                 )
             }
@@ -74,12 +102,55 @@ impl Display for LexerErr {
                         input,
                         span.start,
                         None,
-                        "No matching '(' found"
+                        Some("No matching '(' found")
                     )
                 )
             }
+        }
+    }
+}
 
-            _ => todo!(),
+impl<'a> Display for ParserErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::UnexpectedEndOfExpression {
+                input,
+                tokind,
+                span,
+            } => {
+                let err_msg = format!(
+                    "Unexpected end of expression, expected '{}'",
+                    token_name(tokind)
+                );
+                write!(
+                    f,
+                    "{}",
+                    err_formatter(
+                        err_msg.as_str(),
+                        input.as_str(),
+                        span.start,
+                        Some(&span.end),
+                        None
+                    )
+                )
+            }
+            Self::TypeMismatch {
+                input,
+                expectedkind,
+                givenkind,
+                span,
+            } => {
+                let err_title = format!(
+                    "Expected Token type {}, got {}",
+                    token_name(expectedkind),
+                    token_name(givenkind)
+                );
+                write!(
+                    f,
+                    "{}",
+                    err_formatter(err_title.as_str(), input, span.start, Some(&span.end), None)
+                )
+            }
         }
     }
 }
@@ -87,22 +158,30 @@ impl Display for LexerErr {
 fn err_formatter(
     err_title: &str,
     input: &str,
-    s_idx: usize,
-    e_idx: Option<&usize>,
-    hint: &str,
+    start: usize,
+    end: Option<&usize>,
+    hint: Option<&str>,
 ) -> String {
     let pointer = format!(
         "{}{}",
-        " ".repeat(s_idx + 1),
-        "^".repeat(if e_idx.is_some() {
-            *e_idx.unwrap() - s_idx
+        " ".repeat(start + 1),
+        "^".repeat(if end.is_some() {
+            *end.unwrap() - start
         } else {
             1
         }),
     );
 
-    format!(
-        "{}\n\t {}\n\t{}\nHint: {}\n",
-        err_title, input, pointer, hint
-    )
+    let without_hint = format!("{}\n\t {}\n\t{}\n", err_title, input, pointer);
+
+    if hint.is_some() {
+        return format!(
+            "{}\n\t {}\n\t{}\nHint: {}\n",
+            err_title,
+            input,
+            pointer,
+            hint.unwrap()
+        );
+    }
+    without_hint
 }
