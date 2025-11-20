@@ -2,22 +2,30 @@ use crate::error::LexerErr;
 use crate::interpreter::push_token;
 use std::fmt::{Display, Formatter, format, write};
 const ERR_LEN: usize = 10;
+
+#[derive(Debug)]
 pub struct Lexer<'a> {
     input: &'a str,
     chars: std::iter::Peekable<std::str::Chars<'a>>,
     pos: usize,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Token {
     pub kind: TokenKind,
-    pub span: Span
+    pub span: Span,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct Span {
     pub start: usize,
-    pub end: usize
+    pub end: usize,
+}
+
+#[derive(Debug)]
+pub struct LexResult<'a> {
+    pub query: &'a str,
+    pub tokens: Vec<Token>,
 }
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum TokenKind {
@@ -78,7 +86,7 @@ pub enum TokenKind {
 }
 
 impl<'a> Lexer<'a> {
-    pub fn tokenize(input: &str) -> Result<Vec<Token>, LexerErr> {
+    pub fn tokenize(input: &str) -> Result<LexResult, LexerErr> {
         let mut lexer = Lexer {
             input,
             chars: input.chars().peekable(),
@@ -86,7 +94,10 @@ impl<'a> Lexer<'a> {
         };
 
         match lexer.tokenize_input() {
-            Ok(tokens) => Ok(tokens),
+            Ok(tokens) => Ok(LexResult {
+                query: input,
+                tokens: tokens,
+            }),
             Err(e) => Err(e),
         }
     }
@@ -100,7 +111,7 @@ impl<'a> Lexer<'a> {
         let mut tokens: Vec<Token> = Vec::new();
         let mut parenth_stack: Vec<usize> = Vec::new();
         let mut quotes_stack: Vec<usize> = Vec::new();
-        let mut start:usize = self.pos;
+        let mut start: usize = self.pos;
 
         while let Some(&char) = self.chars.peek() {
             match char {
@@ -109,7 +120,7 @@ impl<'a> Lexer<'a> {
                 }
                 '"' | '\'' => {
                     start = self.pos;
-                    quotes_stack.push(self.pos); 
+                    quotes_stack.push(self.pos);
                     let quote = char;
                     self.next_char();
                     let mut string = String::new();
@@ -126,7 +137,10 @@ impl<'a> Lexer<'a> {
                     if !quotes_stack.is_empty() {
                         return Err(LexerErr::UnterminatedString(
                             self.input.to_string(),
-                            Span { start: quotes_stack.pop().unwrap(), end: self.pos }
+                            Span {
+                                start: quotes_stack.pop().unwrap(),
+                                end: self.pos,
+                            },
                         ));
                     }
 
@@ -160,7 +174,10 @@ impl<'a> Lexer<'a> {
                         return Err(LexerErr::UnexpectedChar(
                             self.input.to_string(),
                             char,
-                            Span { start: start, end: self.pos}
+                            Span {
+                                start: start,
+                                end: self.pos,
+                            },
                         ));
                     }
                 }
@@ -169,13 +186,11 @@ impl<'a> Lexer<'a> {
                     start = self.pos;
                     self.next_char();
                     push_token(&mut tokens, TokenKind::Comma, start, self.pos);
-
                 }
                 ';' => {
                     start = self.pos;
                     self.next_char();
                     push_token(&mut tokens, TokenKind::Semicolon, start, self.pos);
-
                 }
 
                 '>' => {
@@ -184,10 +199,8 @@ impl<'a> Lexer<'a> {
                     if let Some('=') = self.chars.peek() {
                         self.next_char();
                         push_token(&mut tokens, TokenKind::Ge, start, self.pos);
-
                     } else {
                         push_token(&mut tokens, TokenKind::Gt, start, self.pos);
-
                     }
                 }
                 '<' => {
@@ -196,10 +209,8 @@ impl<'a> Lexer<'a> {
                     if let Some('=') = self.chars.next() {
                         self.next_char();
                         push_token(&mut tokens, TokenKind::Le, start, self.pos);
-
                     } else {
                         push_token(&mut tokens, TokenKind::Lt, start, self.pos);
-
                     }
                 }
                 ')' => {
@@ -207,29 +218,28 @@ impl<'a> Lexer<'a> {
                     if parenth_stack.is_empty() {
                         return Err(LexerErr::UnmatchedClosingParenthesis(
                             self.input.to_string(),
-                            Span { start: start, end: self.pos }
+                            Span {
+                                start: start,
+                                end: self.pos,
+                            },
                         ));
                     }
                     parenth_stack.pop();
                     self.next_char();
                     push_token(&mut tokens, TokenKind::RightParen, start, self.pos);
-
                 }
                 '(' => {
                     start = self.pos;
                     parenth_stack.push(self.pos);
                     self.next_char();
                     push_token(&mut tokens, TokenKind::LeftParen, start, self.pos);
-
                 }
 
                 '*' => {
                     start = self.pos;
                     self.next_char();
                     push_token(&mut tokens, TokenKind::Astrisk, start, self.pos);
-
-                    
-                },
+                }
 
                 _ if char.is_alphabetic() || char == '_' => {
                     let start = self.pos;
@@ -247,45 +257,45 @@ impl<'a> Lexer<'a> {
                     let upper = word.to_uppercase();
 
                     let kind = match upper.as_str() {
-                        "ADD"        => TokenKind::Add,
-                        "AS"         => TokenKind::As,
-                        "AUDIT"      => TokenKind::Audit,
-                        "CONNECT"    => TokenKind::Connect,
-                        "CREATE"     => TokenKind::Create,
-                        "CONTAINS"   => TokenKind::Contains,
-                        "DROP"       => TokenKind::Drop,
-                        "DELETE"     => TokenKind::Delete,
-                        "DESCRIBE"   => TokenKind::Describe,
-                        "DESTROY"    => TokenKind::Destroy,
-                        "DISABLE"    => TokenKind::Disable,
+                        "ADD" => TokenKind::Add,
+                        "AS" => TokenKind::As,
+                        "AUDIT" => TokenKind::Audit,
+                        "CONNECT" => TokenKind::Connect,
+                        "CREATE" => TokenKind::Create,
+                        "CONTAINS" => TokenKind::Contains,
+                        "DROP" => TokenKind::Drop,
+                        "DELETE" => TokenKind::Delete,
+                        "DESCRIBE" => TokenKind::Describe,
+                        "DESTROY" => TokenKind::Destroy,
+                        "DISABLE" => TokenKind::Disable,
                         "DISCONNECT" => TokenKind::Disconnect,
-                        "ENABLE"     => TokenKind::Enable,
-                        "FROM"       => TokenKind::From,
-                        "GENERATE"   => TokenKind::Generate,
-                        "GENERATED"  => TokenKind::Generated,
-                        "INIT"       => TokenKind::Init,
-                        "INTO"       => TokenKind::Into,
-                        "INSERT"     => TokenKind::Insert,
-                        "LIST"       => TokenKind::List,
-                        "LOG"        => TokenKind::Log,
-                        "LIMIT"      => TokenKind::Limit,
-                        "METADATA"   => TokenKind::Metadata,
-                        "PASSWORD"   => TokenKind::Password,
-                        "PROMPT"     => TokenKind::Prompt,
-                        "REGISTER"   => TokenKind::Register,
-                        "ROTATE"     => TokenKind::Rotate,
-                        "SELECT"     => TokenKind::Select,
-                        "SET"        => TokenKind::Set,
-                        "STATUS"     => TokenKind::Status,
-                        "UPDATE"     => TokenKind::Update,
-                        "WHERE"      => TokenKind::Where,
-                        "WITH"       => TokenKind::With,
-                        "TO"         => TokenKind::To,
-                        "AND"        => TokenKind::And,
-                        "OR"         => TokenKind::Or,
-                        "TRUE"       => TokenKind::Bool(true),
-                        "FALSE"      => TokenKind::Bool(false),
-                        _            => TokenKind::Identifier(word.to_string()),
+                        "ENABLE" => TokenKind::Enable,
+                        "FROM" => TokenKind::From,
+                        "GENERATE" => TokenKind::Generate,
+                        "GENERATED" => TokenKind::Generated,
+                        "INIT" => TokenKind::Init,
+                        "INTO" => TokenKind::Into,
+                        "INSERT" => TokenKind::Insert,
+                        "LIST" => TokenKind::List,
+                        "LOG" => TokenKind::Log,
+                        "LIMIT" => TokenKind::Limit,
+                        "METADATA" => TokenKind::Metadata,
+                        "PASSWORD" => TokenKind::Password,
+                        "PROMPT" => TokenKind::Prompt,
+                        "REGISTER" => TokenKind::Register,
+                        "ROTATE" => TokenKind::Rotate,
+                        "SELECT" => TokenKind::Select,
+                        "SET" => TokenKind::Set,
+                        "STATUS" => TokenKind::Status,
+                        "UPDATE" => TokenKind::Update,
+                        "WHERE" => TokenKind::Where,
+                        "WITH" => TokenKind::With,
+                        "TO" => TokenKind::To,
+                        "AND" => TokenKind::And,
+                        "OR" => TokenKind::Or,
+                        "TRUE" => TokenKind::Bool(true),
+                        "FALSE" => TokenKind::Bool(false),
+                        _ => TokenKind::Identifier(word.to_string()),
                     };
 
                     push_token(&mut tokens, kind, start, self.pos);
@@ -294,7 +304,10 @@ impl<'a> Lexer<'a> {
                     return Err(LexerErr::UnexpectedChar(
                         self.input.to_string(),
                         char,
-                        Span { start: self.pos, end: self.pos+1}
+                        Span {
+                            start: self.pos,
+                            end: self.pos + 1,
+                        },
                     ));
                 }
             } // end of char matching
@@ -303,7 +316,10 @@ impl<'a> Lexer<'a> {
         if !parenth_stack.is_empty() {
             return Err(LexerErr::UnterminatedParenthsis(
                 self.input.to_string(),
-                Span { start: parenth_stack.pop().unwrap(), end: self.pos }
+                Span {
+                    start: parenth_stack.pop().unwrap(),
+                    end: self.pos,
+                },
             ));
         }
 
@@ -329,13 +345,22 @@ impl<'a> Lexer<'a> {
         }
         let number = str_number
             .parse::<i32>()
-            .map_err(|_| LexerErr::InvalidNumber);
+            .map_err(|_| LexerErr::InvalidNumber {
+                input: self.input.to_string(),
+                span: Span {
+                    start: s_idx,
+                    end: self.pos,
+                },
+            });
         match number {
             Ok(n) => Ok(TokenKind::Number(n)),
-            Err(e) => Err(LexerErr::InvalidNumber(
-                self.input.to_string(),
-                Span { start: s_idx, end: self.pos }
-            )),
+            Err(e) => Err(LexerErr::InvalidNumber {
+                input: self.input.to_string(),
+                span: Span {
+                    start: s_idx,
+                    end: self.pos,
+                },
+            }),
         }
     }
 }
@@ -355,8 +380,8 @@ mod tests {
     #[test]
     fn test_simple_command() {
         let input = "CREATE REGISTER phone;";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert_eq!(tokens.len(), 4);
         assert_eq!(tokens[0].kind, TokenKind::Create);
         assert_eq!(tokens[1].kind, TokenKind::Register);
@@ -367,8 +392,8 @@ mod tests {
     #[test]
     fn test_string_literal() {
         let input = r#"ADD INTO phone PASSWORD "hunter2";"#;
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert_eq!(tokens.len(), 6);
         assert_eq!(tokens[0].kind, TokenKind::Add);
         assert_eq!(tokens[1].kind, TokenKind::Into);
@@ -381,8 +406,8 @@ mod tests {
     #[test]
     fn test_numbers() {
         let input = "LIMIT 50";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert_eq!(tokens.len(), 2);
         assert_eq!(tokens[0].kind, TokenKind::Limit);
         assert_eq!(tokens[1].kind, TokenKind::Number(50));
@@ -391,8 +416,8 @@ mod tests {
     #[test]
     fn test_negative_number() {
         let input = "LIMIT -5";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert_eq!(tokens.len(), 2);
         assert_eq!(tokens[0].kind, TokenKind::Limit);
         assert_eq!(tokens[1].kind, TokenKind::Number(-5));
@@ -401,8 +426,8 @@ mod tests {
     #[test]
     fn test_operators() {
         let input = "WHERE age >= 18 AND active = true";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert_eq!(tokens.len(), 8);
         assert_eq!(tokens[0].kind, TokenKind::Where);
         assert_eq!(tokens[1].kind, TokenKind::Identifier("age".to_string()));
@@ -417,8 +442,8 @@ mod tests {
     #[test]
     fn test_all_comparison_operators() {
         let input = "> >= < <= = !=";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert_eq!(tokens.len(), 6);
         assert_eq!(tokens[0].kind, TokenKind::Gt);
         assert_eq!(tokens[1].kind, TokenKind::Ge);
@@ -431,15 +456,18 @@ mod tests {
     #[test]
     fn test_complex_query() {
         let input = "SELECT * FROM phone WHERE used_for CONTAINS \"github\";";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert_eq!(tokens.len(), 9);
         assert_eq!(tokens[0].kind, TokenKind::Select);
         assert_eq!(tokens[1].kind, TokenKind::Astrisk);
         assert_eq!(tokens[2].kind, TokenKind::From);
         assert_eq!(tokens[3].kind, TokenKind::Identifier("phone".to_string()));
         assert_eq!(tokens[4].kind, TokenKind::Where);
-        assert_eq!(tokens[5].kind, TokenKind::Identifier("used_for".to_string()));
+        assert_eq!(
+            tokens[5].kind,
+            TokenKind::Identifier("used_for".to_string())
+        );
         assert_eq!(tokens[6].kind, TokenKind::Contains);
         assert_eq!(tokens[7].kind, TokenKind::String("github".to_string()));
         assert_eq!(tokens[8].kind, TokenKind::Semicolon);
@@ -448,8 +476,8 @@ mod tests {
     #[test]
     fn test_whitespace_handling() {
         let input = "CREATE    REGISTER     phone;";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert_eq!(tokens.len(), 4);
         assert_eq!(tokens[0].kind, TokenKind::Create);
         assert_eq!(tokens[1].kind, TokenKind::Register);
@@ -460,8 +488,8 @@ mod tests {
     #[test]
     fn test_case_insensitive_keywords() {
         let input = "create REGISTER Phone;";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert_eq!(tokens.len(), 4);
         assert_eq!(tokens[0].kind, TokenKind::Create);
         assert_eq!(tokens[1].kind, TokenKind::Register);
@@ -472,8 +500,8 @@ mod tests {
     #[test]
     fn test_parentheses() {
         let input = "WHERE (age > 18 AND active = true)";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert!(tokens.iter().any(|t| t.kind == TokenKind::LeftParen));
         assert!(tokens.iter().any(|t| t.kind == TokenKind::RightParen));
     }
@@ -481,15 +509,15 @@ mod tests {
     #[test]
     fn test_comma() {
         let input = "SELECT id, name, password FROM phone;";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert!(tokens.iter().any(|t| t.kind == TokenKind::Comma));
     }
 
     #[test]
     fn test_empty_input() {
         let input = "";
-        let tokens = Lexer::tokenize(input).unwrap();
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
         assert_eq!(tokens.len(), 0);
     }
 
@@ -524,12 +552,12 @@ mod tests {
     #[test]
     fn test_span_tracking() {
         let input = "CREATE REGISTER phone;";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         // CREATE at position 0-6
         assert_eq!(tokens[0].span.start, 0);
         assert_eq!(tokens[0].span.end, 6);
-        
+
         // REGISTER at position 7-15
         assert_eq!(tokens[1].span.start, 7);
         assert_eq!(tokens[1].span.end, 15);
@@ -538,17 +566,20 @@ mod tests {
     #[test]
     fn test_underscore_in_identifier() {
         let input = "my_register_name";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert_eq!(tokens.len(), 1);
-        assert_eq!(tokens[0].kind, TokenKind::Identifier("my_register_name".to_string()));
+        assert_eq!(
+            tokens[0].kind,
+            TokenKind::Identifier("my_register_name".to_string())
+        );
     }
 
     #[test]
     fn test_boolean_literals() {
         let input = "true AND false";
-        let tokens = Lexer::tokenize(input).unwrap();
-        
+        let tokens = Lexer::tokenize(input).unwrap().tokens;
+
         assert_eq!(tokens.len(), 3);
         assert_eq!(tokens[0].kind, TokenKind::Bool(true));
         assert_eq!(tokens[1].kind, TokenKind::And);
@@ -557,14 +588,21 @@ mod tests {
 
     #[test]
     fn test_complex_nested_query() {
-        let input = "WHERE (used_for CONTAINS \"aws\" OR used_for CONTAINS \"s3\") AND active = true;";
+        let input =
+            "WHERE (used_for CONTAINS \"aws\" OR used_for CONTAINS \"s3\") AND active = true;";
         let result = Lexer::tokenize(input);
         assert!(result.is_ok());
-        let tokens = result.unwrap();
-        
+        let tokens = result.unwrap().tokens;
+
         // Verify parentheses are balanced
-        let open_count = tokens.iter().filter(|t| t.kind == TokenKind::LeftParen).count();
-        let close_count = tokens.iter().filter(|t| t.kind == TokenKind::RightParen).count();
+        let open_count = tokens
+            .iter()
+            .filter(|t| t.kind == TokenKind::LeftParen)
+            .count();
+        let close_count = tokens
+            .iter()
+            .filter(|t| t.kind == TokenKind::RightParen)
+            .count();
         assert_eq!(open_count, close_count);
     }
 }
