@@ -5,6 +5,8 @@ use rustyline::error::ReadlineError;
 mod error;
 mod interpreter;
 use interpreter::lexer::{self, *};
+
+use crate::interpreter::parser::Parser;
 // use interpreter::parser::Parser;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -14,10 +16,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(cmd) => {
                 let k = lexer::Lexer::tokenize(cmd.as_str());
                 match k {
-                    Ok(tokens) => {
-                        // Parser::parse(tokens);
-                        dbg!(tokens);
-                    }
+                    Ok(tokens) => match Parser::parse(tokens) {
+                        Ok(_) => println!("PASSED"),
+                        Err(e) => println!("\nERROR: {}", e),
+                    },
                     Err(E) => println!("\nERROR: {}", E),
                 }
                 cmd
