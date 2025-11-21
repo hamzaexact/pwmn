@@ -1,6 +1,7 @@
 use crate::error::ParserErr;
 use crate::interpreter::lexer::{LexResult, Span, Token, TokenKind};
 use crate::interpreter::{ast, lexer};
+use std::error::Error;
 //
 pub struct Parser<'t> {
     query: &'t str,
@@ -15,12 +16,7 @@ impl<'t> Parser<'t> {
             tokens: lex_res.tokens,
             pos: 0,
         };
-        let k = parser.consume(TokenKind::Select);
-        let f = parser.consume(TokenKind::As);
-        match f {
-            Ok(_) => return Ok(ast::Stmt::Empty),
-            Err(e) => return Err(e),
-        }
+        let f = parser.parse_expression()?;
         Ok(ast::Stmt::Empty)
     }
 
@@ -58,5 +54,68 @@ impl<'t> Parser<'t> {
             }
         }
         Ok(())
+    }
+
+    fn parse_expression(&mut self) -> Result<ast::Expr, ParserErr> {
+        let expr = self.parse_addition()?;
+        Ok(expr)
+    }
+
+    fn parse_addition(&mut self) -> Result<ast::Expr, ParserErr> {
+        let expr = self.parse_multiplication()?;
+        let token = self.peek_token();
+        match token {
+            Some(tk) => {
+                if tk.kind == TokenKind::Plus {
+                    self.consume(TokenKind::Plus);
+                    let right = self.parse_multiplication()?;
+                    return Ok(ast::Expr::Add(Box::new(expr), Box::new(right)));
+                }
+            }
+            None => {
+                println!("ERR");
+            }
+        }
+
+        Ok(expr)
+    }
+
+    fn parse_multiplication(&mut self) -> Result<ast::Expr, ParserErr> {
+        let expr = self.parse_factor()?;
+        let token = self.peek_token();
+        match token {
+            Some(tk) => {
+                if tk.kind == TokenKind::Astrisk {
+                    let right = self.parse_multiplication()?;
+                    return Ok(ast::Expr::Add(Box::new(expr), Box::new(right)));
+                }
+            }
+            None => {
+                println!("ERR");
+            }
+        }
+
+        Ok(expr)
+    }
+
+    fn parse_factor(&mut self) -> Result<ast::Expr, ParserErr> {
+        let token = self.peek_token();
+        match token {
+            Some(tk) => match tk.kind {
+                TokenKind::Select => {
+                    self.consume(TokenKind::Select);
+                    let expr = self.parse_expression()?;
+                    return Ok(ast::Expr::Statment(ast::Stmt::Select { cols: Box::new(expr)}));
+                }
+
+                TokenKind::Number(n) => {
+                    self.consume(TokenKind::Number(n));
+                    return Ok(ast::Expr::Number(n));
+                }
+                _ => return Ok(ast::Expr::Empty),
+            },
+            None => return Ok(ast::Expr::Empty),
+        }
+        Ok(ast::Expr::Empty)
     }
 }

@@ -51,7 +51,11 @@ pub enum TokenKind {
     List,
     Limit,
     Metadata,
+    Minus,
     Password,
+    Percent,
+    Slash,
+    Plus,
     Prompt,
     Register,
     Rotate,
@@ -147,14 +151,15 @@ impl<'a> Lexer<'a> {
                     push_token(&mut tokens, TokenKind::String(string), start, self.pos);
                 } // end of string parse
 
-                '-' | '0'..='9' => {
-                    let mut signed = false;
+                '-' => {
                     start = self.pos;
-                    if char == '-' {
-                        signed = true;
-                        self.next_char();
-                    }
-                    match self.extract_number(signed) {
+                    self.next_char();
+                    push_token(&mut tokens, TokenKind::Minus, start, self.pos);
+                }
+
+                '0'..='9' => {
+                    start = self.pos;
+                    match self.extract_number() {
                         Ok(tok) => push_token(&mut tokens, tok, start, self.pos),
                         Err(e) => return Err(e),
                     }
@@ -213,6 +218,13 @@ impl<'a> Lexer<'a> {
                         push_token(&mut tokens, TokenKind::Lt, start, self.pos);
                     }
                 }
+
+                '+' => {
+                    start = self.pos;
+                    self.next_char();
+                    push_token(&mut tokens, TokenKind::Plus, start, self.pos);
+                }
+
                 ')' => {
                     start = self.pos;
                     if parenth_stack.is_empty() {
@@ -327,14 +339,9 @@ impl<'a> Lexer<'a> {
     } // end of fn tokenize_input
     //
 
-    fn extract_number(&mut self, signed: bool) -> Result<TokenKind, LexerErr> {
+    fn extract_number(&mut self) -> Result<TokenKind, LexerErr> {
         let mut s_idx: usize = self.pos;
-        let mut str_number = if signed {
-            s_idx = self.pos - 1;
-            String::from('-')
-        } else {
-            String::new()
-        };
+        let mut str_number = String::new();
         while let Some(n) = self.chars.peek() {
             if n.is_digit(10) {
                 str_number.push(*n);

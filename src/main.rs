@@ -16,10 +16,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(cmd) => {
                 let k = lexer::Lexer::tokenize(cmd.as_str());
                 match k {
-                    Ok(tokens) => match Parser::parse(tokens) {
-                        Ok(_) => println!("PASSED"),
-                        Err(e) => println!("\nERROR: {}", e),
-                    },
+                    Ok(tokens) => {
+                        // println!("{:#?}", tokens);
+                        match Parser::parse(tokens) {
+                            Ok(_) => println!("PASSED"),
+                            Err(e) => println!("\nERROR: {}", e),
+                        }
+                    }
                     Err(E) => println!("\nERROR: {}", E),
                 }
                 cmd
