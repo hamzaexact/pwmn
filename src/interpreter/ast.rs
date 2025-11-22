@@ -42,5 +42,5 @@ pub enum Stmt {
     Empty,
     Create { reg_name: String },
     Connect { reg_name: String },
-    Select {cols: Box<Expr>}
+    Select { cols: Box<Expr> },
 }
