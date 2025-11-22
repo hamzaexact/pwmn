@@ -295,6 +295,7 @@ impl<'a> Lexer<'a> {
                         "PASSWORD" => TokenKind::Password,
                         "PROMPT" => TokenKind::Prompt,
                         "REGISTER" => TokenKind::Register,
+                        "REG" => TokenKind::Register, // shorthand for register;
                         "ROTATE" => TokenKind::Rotate,
                         "SELECT" => TokenKind::Select,
                         "SET" => TokenKind::Set,
