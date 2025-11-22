@@ -1,5 +1,6 @@
 use crate::interpreter::token_name;
 use crate::interpreter::{Span, lexer::TokenKind};
+use std::any::type_name;
 use std::fmt::{Debug, Display, Formatter, format};
 
 #[derive(Debug)]
@@ -21,6 +22,12 @@ pub enum ParserErr {
     TypeMismatch {
         input: String,
         expectedkind: TokenKind,
+        givenkind: TokenKind,
+        span: Span,
+    },
+
+    ExpectedIdentifier {
+        input: String,
         givenkind: TokenKind,
         span: Span,
     },
@@ -145,6 +152,23 @@ impl<'a> Display for ParserErr {
                     token_name(expectedkind),
                     token_name(givenkind)
                 );
+                write!(
+                    f,
+                    "{}",
+                    err_formatter(err_title.as_str(), input, span.start, Some(&span.end), None)
+                )
+            }
+
+            Self::ExpectedIdentifier {
+                input,
+                givenkind,
+                span,
+            } => {
+                let err_title = format!(
+                    "Expected identifier but {} token type were given",
+                    token_name(givenkind)
+                );
+
                 write!(
                     f,
                     "{}",
