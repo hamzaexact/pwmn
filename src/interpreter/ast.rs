@@ -40,6 +40,7 @@ pub enum BinaryOperator {
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Empty,
+    Init,
     Create { reg_name: String },
     Connect { reg_name: String },
     Select { cols: Box<Expr> },

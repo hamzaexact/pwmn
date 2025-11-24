@@ -38,6 +38,11 @@ pub enum InitErr {
     VaultAlreadyExists,
 }
 
+#[derive(Debug)]
+pub enum CreateErr {
+    VaultNotExists,
+}
+
 pub enum ParserToken {
     Expression,
     Identifier,
@@ -51,6 +56,7 @@ use ParserToken::*;
 impl std::error::Error for LexerErr {}
 impl std::error::Error for ParserErr {}
 impl std::error::Error for InitErr {}
+impl std::error::Error for CreateErr {}
 
 impl<'a> Display for LexerErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -194,6 +200,19 @@ impl std::fmt::Display for InitErr {
             Self::VaultAlreadyExists => {
                 let err_title = "The Root Vault already exists, and it cannot be overided, TODO";
                 write!(f, "{}", err_title)
+            }
+        }
+    }
+}
+
+impl std::fmt::Display for CreateErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::VaultNotExists => {
+                write!(
+                    f,
+                    "There is no RootVault yet, run INIT first to initialize the RootVAULT"
+                )
             }
         }
     }

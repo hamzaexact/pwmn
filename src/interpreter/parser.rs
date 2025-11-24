@@ -16,8 +16,11 @@ impl<'t> Parser<'t> {
             tokens: lex_res.tokens,
             pos: 0,
         };
-        let f = parser.parse_expression()?;
-        Ok(ast::Stmt::Empty)
+        let res = parser.parse_expression()?;
+        match res {
+            ast::Expr::Statment(ast::Stmt::Init) => Ok(ast::Stmt::Init),
+            _ => todo!()
+        }
     }
 
     fn peek_token(&self) -> Option<(Token, TokenKind)> {
@@ -63,7 +66,7 @@ impl<'t> Parser<'t> {
 
     fn parse_expression(&mut self) -> Result<ast::Expr, ParserErr> {
         let expr = self.parse_addition()?;
-        dbg!(&expr);
+        // dbg!(&expr);
         Ok(expr)
     }
 
@@ -123,6 +126,10 @@ impl<'t> Parser<'t> {
                     TokenKind::Number(n) => {
                         self.consume(TokenKind::Number(n));
                         return Ok(ast::Expr::Number(n));
+                    }
+
+                    TokenKind::Init => {
+                        return Ok(ast::Expr::Statment(ast::Stmt::Init))
                     }
 
                     TokenKind::Create => {
