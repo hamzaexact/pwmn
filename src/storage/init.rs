@@ -17,8 +17,6 @@ pub fn init() -> Result<(), Box<dyn std::error::Error>> {
         return Err(Box::new(InitErr::VaultAlreadyExists));
     }
     mksafe_dir(&root_folder)?;
-    let vault_path = root_folder.join(FNAME);
-    OO::new().read(true).write(true).create(true).open(FNAME)?;
     RV::new()?;
     let s_msg = format!(
         "initialzed empty vault repository in {}/{}",
