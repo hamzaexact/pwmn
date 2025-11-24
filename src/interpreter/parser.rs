@@ -19,7 +19,7 @@ impl<'t> Parser<'t> {
         let res = parser.parse_expression()?;
         match res {
             ast::Expr::Statment(ast::Stmt::Init) => Ok(ast::Stmt::Init),
-            _ => todo!()
+            _ => todo!(),
         }
     }
 
@@ -128,9 +128,7 @@ impl<'t> Parser<'t> {
                         return Ok(ast::Expr::Number(n));
                     }
 
-                    TokenKind::Init => {
-                        return Ok(ast::Expr::Statment(ast::Stmt::Init))
-                    }
+                    TokenKind::Init => return Ok(ast::Expr::Statment(ast::Stmt::Init)),
 
                     TokenKind::Create => {
                         self.consume(TokenKind::Create)?;
