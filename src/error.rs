@@ -33,6 +33,11 @@ pub enum ParserErr {
     },
 }
 
+#[derive(Debug)]
+pub enum InitErr {
+    VaultAlreadyExists,
+}
+
 pub enum ParserToken {
     Expression,
     Identifier,
@@ -42,6 +47,10 @@ pub enum ParserToken {
 use LexerErr::*;
 use ParserErr::*;
 use ParserToken::*;
+
+impl std::error::Error for LexerErr {}
+impl std::error::Error for ParserErr {}
+impl std::error::Error for InitErr {}
 
 impl<'a> Display for LexerErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -174,6 +183,17 @@ impl<'a> Display for ParserErr {
                     "{}",
                     err_formatter(err_title.as_str(), input, span.start, Some(&span.end), None)
                 )
+            }
+        }
+    }
+}
+
+impl std::fmt::Display for InitErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::VaultAlreadyExists => {
+                let err_title = "The Root Vault already exists, and it cannot be overided, TODO";
+                write!(f, "{}", err_title)
             }
         }
     }
