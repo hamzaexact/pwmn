@@ -41,6 +41,8 @@ pub enum InitErr {
 #[derive(Debug)]
 pub enum CreateErr {
     VaultNotExists,
+    ValidationErr,
+    RegisterAlreadyExists,
 }
 
 pub enum ParserToken {
@@ -212,6 +214,17 @@ impl std::fmt::Display for CreateErr {
                 write!(
                     f,
                     "There is no RootVault yet, run INIT first to initialize the RootVAULT"
+                )
+            }
+
+            Self::ValidationErr => {
+                write!(f, "Special characters are not allowed in Register names")
+            }
+
+            Self::RegisterAlreadyExists => {
+                write!(
+                    f,
+                    "A register with this name already in the vault, use another name"
                 )
             }
         }
