@@ -43,6 +43,7 @@ pub enum CreateErr {
     VaultNotExists,
     ValidationErr,
     RegisterAlreadyExists,
+    DestroyedVaultErr
 }
 
 pub enum ParserToken {
@@ -226,6 +227,13 @@ impl std::fmt::Display for CreateErr {
                     f,
                     "A register with this name already in the vault, use another name"
                 )
+            }
+            Self::DestroyedVaultErr => {
+                // todo, repair files logic
+                write!(
+                f, 
+                    "The root vault file is missed:\n\n  ROOT VAULT\n\t|\n\t| ->rvault.bin (missed)\n\n\tRun REPAIR VAULT to repair the desroyed files(TODO)"
+            )
             }
         }
     }

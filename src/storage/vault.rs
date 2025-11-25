@@ -19,6 +19,9 @@ pub fn is_vault_exisits() -> Result<(), Box<dyn std::error::Error>> {
     if !(root_folder.try_exists()?) {
         return Err(Box::new(CreateErr::VaultNotExists));
     }
+    if !(root_folder.join(FNAME).try_exists()?) {
+        return Err(Box::new(CreateErr::DestroyedVaultErr));
+    }
     Ok(())
 }
 
