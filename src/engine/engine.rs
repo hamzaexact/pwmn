@@ -11,6 +11,7 @@ pub struct Executor {}
 impl Executor {
     pub fn execute(input: &str) -> Result<(), Box<dyn std::error::Error>> {
         let lexed_tokens = lexer::Lexer::tokenize(input)?;
+    dbg!(&lexed_tokens);
         let parse_result = parser::Parser::parse(lexed_tokens)?;
         let eval = parse_result.eval()?;
         Ok(())

@@ -1,5 +1,5 @@
 use crate::error::InitErr;
-use crate::storage::vault::RootValut as RV;
+use crate::storage::rootvault::RootValut as RV;
 use std::{
     env,
     fs::{self, File, OpenOptions as OO, create_dir_all as mksafe_dir},

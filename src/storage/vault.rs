@@ -1,49 +1,93 @@
+// use crate::encryption::kdf;
+use super::super::encryption::kdf;
+use super::init::{FNAME, ROOT_FDNAME};
+use crate::encryption::kdf::derive_key;
 use crate::error::CreateErr;
-use crate::storage::init::{FNAME, ROOT_FDNAME};
-use crate::storage::is_vault_exisits;
-use rand::random;
+use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
 use std::io::Write;
 use std::{
     env,
-    fs::{self, File, OpenOptions, create_dir_all},
-    path::{Path, PathBuf},
+    fs::{File, OpenOptions},
+    path::PathBuf,
 };
 
-#[derive(Debug)]
-pub struct RootValut {
-    pub magic: [u8; 4],
-    pub version: u16,
-    pub salt: [u8; 16],
-    pub n_regs: u16,
+pub fn is_vault_exisits() -> Result<(), Box<dyn std::error::Error>> {
+    let home = env::var("HOME")?;
+    let root_folder = PathBuf::from(&home).join(ROOT_FDNAME);
+    if !(root_folder.try_exists()?) {
+        return Err(Box::new(CreateErr::VaultNotExists));
+    }
+    Ok(())
 }
 
-impl RootValut {
-    pub fn new() -> Result<(), Box<dyn std::error::Error>> {
-        let mut f = Self {
-            magic: [0x50, 0x57, 0x4D, 0x4E],
-            version: 1,
-            salt: rand::random(),
-            n_regs: 0,
-        };
-        f.allocate_header()?;
-        Ok(())
+pub fn register_exists(name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let root_folder = get_root_file()?;
+    let mut vault_f = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(root_folder.join(FNAME))?;
+    vault_f.seek(SeekFrom::Start((22)));
+    let mut n_entries_buffer = [0u8; 2];
+    vault_f.read_exact(&mut n_entries_buffer);
+    let n_entries = u16::from_le_bytes(n_entries_buffer);
+    dbg!(n_entries);
+    if n_entries == 0 {
+        return Ok(());
     }
-
-    fn allocate_header(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let k = is_vault_exisits()?;
-        let home = env::var("HOME")?;
-        let root_file = PathBuf::from(&home).join(ROOT_FDNAME).join(FNAME);
-        let mut file = OpenOptions::new().read(true).write(true).create(true).open(root_file)?;
-        let mut buffer: Vec<u8> = vec![];
-        buffer.extend_from_slice(&self.magic); // magic 4bytes 
-        buffer.extend_from_slice(&self.version.to_le_bytes()); // version 2bytes
-        buffer.extend_from_slice(&self.salt); // salt 16 bytes needs later to derive reg hash
-        /// number of registers 2 bytes, we need this to iterate over N number of registers  to
-        /// match the given input against the stored registers, since the registers would be
-        /// represented as HASH not as STRING, its okay to be public not encrypted.
-        buffer.extend_from_slice(&self.n_regs.to_le_bytes()); 
-
-        file.write_all(&buffer); // 24 bytes [4][2][16][2]
-        Ok(())
+    for _ in 0..n_entries {
+        let mut current_cell_key = [0u8; 32];
+        vault_f.read_exact(&mut current_cell_key)?;
+        let out_key = kdf::derive_key(name, &get_salt()?);
+        if out_key == current_cell_key {
+            return Err(Box::new(CreateErr::RegisterAlreadyExists));
+        }
     }
+    Ok(())
+}
+
+pub fn get_root_file() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let home = env::var("HOME")?;
+    Ok(PathBuf::from(&home).join(ROOT_FDNAME))
+}
+
+pub fn get_salt() -> Result<[u8; 16], Box<dyn std::error::Error>> {
+    let root_folder = get_root_file()?;
+    let mut root_vault_f = OpenOptions::new()
+        .write(true)
+        .read(true)
+        .open(root_folder.join(FNAME))?;
+    root_vault_f.seek(SeekFrom::Start((6)))?;
+    let mut salt = [0u8; 16];
+    root_vault_f.read_exact(&mut salt)?;
+    Ok(salt)
+}
+
+pub fn create_register(name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let salt = get_salt()?;
+    kdf::derive_key(name, &salt);
+    let root_folder = get_root_file()?;
+    let mut root_vault_f = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(root_folder.join(FNAME))?;
+    root_vault_f.seek(SeekFrom::Start(0))?;
+    let mut tag = [0u8; 24];
+    root_vault_f.read_exact(&mut tag);
+    dbg!(&tag);
+     root_vault_f.seek(SeekFrom::Start(0))?;
+    root_vault_f.seek(SeekFrom::Start(22))?;
+    let mut n_entries_buffer = [0u8; 2];
+    root_vault_f.read_exact(&mut n_entries_buffer)?;
+    let n_of_entries = u16::from_le_bytes(n_entries_buffer);
+    let offset = n_of_entries * 32;
+    dbg!(offset);
+    root_vault_f.seek(SeekFrom::Start(((24 + offset) as u64)))?;
+    let new_register_key = derive_key(name, &salt);
+    root_vault_f.write_all(&new_register_key)?;
+    root_vault_f.seek(SeekFrom::Start((22)))?;
+    root_vault_f.write_all(&((n_of_entries+1) as u16).to_le_bytes())?;
+    println!("HAMZA");
+    Ok(())
 }

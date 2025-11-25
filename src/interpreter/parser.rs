@@ -19,6 +19,7 @@ impl<'t> Parser<'t> {
         let res = parser.parse_expression()?;
         match res {
             ast::Expr::Statment(ast::Stmt::Init) => Ok(ast::Stmt::Init),
+            ast::Expr::Statment(ast::Stmt::Create { reg_name }) => Ok(ast::Stmt::Create { reg_name: reg_name }),
             _ => todo!(),
         }
     }
@@ -164,10 +165,10 @@ impl<'t> Parser<'t> {
                             }
                         }
                     }
-                    _ => return Ok(ast::Expr::Empty),
+                    _ => todo!()
                 }
             }
-            None => return Ok(ast::Expr::Empty),
+            None => todo!()
         }
         Ok(ast::Expr::Empty)
     }
