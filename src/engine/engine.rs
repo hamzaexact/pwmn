@@ -6,7 +6,7 @@ use crate::interpreter::parser;
 use crate::session::offSessionConn::OffSessionConn;
 use crate::storage::init;
 use std::error::Error;
-type DynamicError = Box<dyn std::error::Error>;
+type DynamicError = Box<dyn std::error::Error>; // dynamic err
 
 pub struct Executor {}
 
