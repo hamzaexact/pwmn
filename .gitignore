@@ -1,7 +1,5 @@
 /target
 .DS_Store
-src/main.rs
-main.rs
 /node_modules
 package-lock.json
 package.json
