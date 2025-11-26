@@ -6,7 +6,7 @@ use std::{
 
 pub struct OffSessionConn {
     current_connected_register: Option<Register>, // might be connected ,might be not
-    base_path: PathBuf,
+    base_path: PathBuf, // path to the current active vault
 }
 
 impl OffSessionConn {
