@@ -12,14 +12,12 @@ use crate::storage::childvault::{self, ChildRootVault};
 
 impl CreateRegExec {
     pub fn execute(name: &str) -> Result<(), Box<dyn std::error::Error>> {
-        /// step 1: validate if the root vault already in. if not, it will propagate an
-        /// VaultNotExists Error.
-        storage::vault::is_vault_exisits()?;
+        // Step 1: Validate if the root vault exists. If not, it propagates a VaultNotExists error."
+            storage::vault::is_vault_exisits()?;
 
         storage::vault::is_child_vault_f_exists()?;
-        
 
-        // need to store the key to prevent re-computing in other function calls
+        // Store the key to avoid re-computation in subsequent function calls.
         let key = storage::vault::register_exists(name)?;
 
         storage::vault::create_unique_reg_f(key)?;
@@ -33,12 +31,13 @@ impl CreateRegExec {
 
     pub fn insert_encrypted_empty_data(p: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         let mut file = OpenOptions::new().read(true).write(true).open(&p)?; // pointer
-        // to p, because we need to move it later to fetch the PRIVATE VAULT salt.
+        // To p, because we need to move it later to fetch the private vault salt.
         let mut password =
             rpassword::prompt_password("Creating Vault required a password to enter with later: ")?;
         let salt = childvault::ChildRootVault::get_private_salt(p)?;
         let key = derive_key(&password, &salt);
-        Zeroize::zeroize(&mut password); // zeroize the password in memory
+        // Zeroize the password from memory.
+        Zeroize::zeroize(&mut password); 
 
         Ok(())
     }

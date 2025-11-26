@@ -6,6 +6,7 @@ use std::{
     path::{self, Path, PathBuf},
 };
 
+// Private root vault to handle all other child files.
 pub const ROOT_FDNAME: &str = ".pwmn";
 pub const FNAME: &str = "rvault.bin"; // root vault
 

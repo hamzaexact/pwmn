@@ -41,11 +41,14 @@ impl RootValut {
         let mut buffer: Vec<u8> = vec![];
         buffer.extend_from_slice(&self.magic); // magic 4bytes 
         buffer.extend_from_slice(&self.version.to_le_bytes()); // version 2bytes
-        buffer.extend_from_slice(&self.salt); // salt 16 bytes needs later to derive reg hash
+        
+        // Salt: 16 bytes, needed for deriving a registry hash later.
+        buffer.extend_from_slice(&self.salt);
+        
 
-        /// number of registers 2 bytes, we need this to iterate over N number of registers  to
-        /// match the given input against the stored registers, since the registers would be
-        /// represented as HASH not as STRING, its okay to be public not encrypted.
+        // "Number of registers is 2 bytes.
+        // We need this to iterate over N number of registers and match the given input against the stored registers,
+        // which are represented as a HASH (not a string), so it's acceptable to be public, not encrypted."
         buffer.extend_from_slice(&self.n_regs.to_le_bytes());
 
         file.write_all(&buffer); // 24 bytes [4][2][16][2]
