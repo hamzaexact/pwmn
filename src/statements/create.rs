@@ -17,7 +17,9 @@ impl CreateRegExec {
         storage::vault::is_vault_exisits()?;
 
         storage::vault::is_child_vault_f_exists()?;
+        
 
+        // need to store the key to prevent re-computing in other function calls
         let key = storage::vault::register_exists(name)?;
 
         storage::vault::create_unique_reg_f(key)?;
