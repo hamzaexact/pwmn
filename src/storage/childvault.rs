@@ -4,6 +4,7 @@ use crate::storage::vault::is_vault_exisits;
 use argon2::password_hash::rand_core::{CryptoRng, OsRng, RngCore};
 use chacha20poly1305::{AeadCore, ChaCha20Poly1305};
 use hex;
+
 use rand::random;
 use rpassword;
 use std::io::{Read, Seek, SeekFrom, Write};

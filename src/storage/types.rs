@@ -1,7 +1,7 @@
 use crate::error::CreateErr;
 use crate::storage::init::{FNAME, ROOT_FDNAME};
 use crate::storage::vault::is_vault_exisits;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, Utc};
 use rand::random;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -51,7 +51,7 @@ pub enum CustomValue {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LogEntry {
-    pub timestamp: DateTime<Utc>,
+    pub timestamp: DateTime<Local>,
     pub operation: Operation,
     pub entry_id: Option<Uuid>,
     pub status: bool,
@@ -68,16 +68,16 @@ pub enum Operation {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct RegMetadata {
-    pub created_at: DateTime<Utc>,
-    pub modified_at: DateTime<Utc>,
+    pub created_at: DateTime<Local>,
+    pub modified_at: DateTime<Local>,
     pub access_count: u32,
     pub n_of_entries: u32,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct EntryMetadata {
-    pub created_at: DateTime<Utc>,
-    pub modified_at: DateTime<Utc>,
+    pub created_at: DateTime<Local>,
+    pub modified_at: DateTime<Local>,
     pub fetched_cnt: u32,
     pub password: String,
     pub strength_score: u8,
@@ -88,4 +88,20 @@ pub struct EntryMetadata {
 pub enum CreatedBy {
     Manual,
     Generated,
+}
+
+impl Register {
+    fn new(r_name: &str) -> Self {
+        Self {
+            r_name: r_name.to_string(),
+            metadata: RegMetadata {
+                created_at: Local::now(),
+                modified_at: Local::now(),
+                access_count: 0,
+                n_of_entries: 0,
+            },
+            entries: Vec::new(),
+            log: Vec::new(),
+        }
+    }
 }
