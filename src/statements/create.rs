@@ -1,6 +1,7 @@
 use crate::storage;
 
 pub struct CreateRegExec;
+use crate::storage::childvault;
 
 impl CreateRegExec {
     pub fn execute(name: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -10,17 +11,14 @@ impl CreateRegExec {
 
         storage::vault::is_child_vault_f_exists()?;
 
-        /// Validation to make sure the name does not contain special characters.
-        CreateRegExec::validate_name(name);
+        let key = storage::vault::register_exists(name)?;
 
-        /// this check if the given register name is not already in the vault
-        storage::vault::register_exists(name)?;
+        storage::vault::create_unique_reg_f(key);
 
-        storage::vault::create_register(name)?;
+        childvault::ChildRootVault::new(key)?;
 
-        Ok(())
-    }
-    pub fn validate_name(name: &str) -> Result<(), ()> {
+        storage::vault::add_to_root_vault(name)?;
+
         Ok(())
     }
 }
