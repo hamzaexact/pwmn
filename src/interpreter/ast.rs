@@ -37,6 +37,9 @@ pub enum BinaryOperator {
     Contains,
 }
 
+
+// todo()! make this implement the COPY TRAIT
+
 #[derive(Debug, Clone)]
 pub enum Stmt {
     Empty,
