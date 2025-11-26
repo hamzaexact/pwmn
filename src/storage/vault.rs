@@ -1,3 +1,5 @@
+use rand::rngs::adapter::ReseedingRng;
+
 // use crate::encryption::kdf;
 use super::super::encryption::kdf;
 use super::init::{FNAME, ROOT_FDNAME};
@@ -19,9 +21,17 @@ pub fn is_vault_exisits() -> Result<(), Box<dyn std::error::Error>> {
     if !(root_folder.try_exists()?) {
         return Err(Box::new(CreateErr::VaultNotExists));
     }
+    Ok(())
+}
+
+pub fn is_child_vault_f_exists() -> Result<(), Box<dyn std::error::Error>> {
+    // if the root_folder exists but the child vault file is missed somehow
+    //
+    let root_folder = get_root_file()?;
     if !(root_folder.join(FNAME).try_exists()?) {
         return Err(Box::new(CreateErr::DestroyedVaultErr));
     }
+
     Ok(())
 }
 
@@ -35,7 +45,6 @@ pub fn register_exists(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut n_entries_buffer = [0u8; 2];
     vault_f.read_exact(&mut n_entries_buffer);
     let n_entries = u16::from_le_bytes(n_entries_buffer);
-    dbg!(n_entries);
     if n_entries == 0 {
         return Ok(());
     }
@@ -68,29 +77,24 @@ pub fn get_salt() -> Result<[u8; 16], Box<dyn std::error::Error>> {
 }
 
 pub fn create_register(name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    // root file vault to derive the key
     let salt = get_salt()?;
+    // getting the key from the kdf.
     kdf::derive_key(name, &salt);
     let root_folder = get_root_file()?;
     let mut root_vault_f = OpenOptions::new()
         .read(true)
         .write(true)
         .open(root_folder.join(FNAME))?;
-    root_vault_f.seek(SeekFrom::Start(0))?;
-    let mut tag = [0u8; 24];
-    root_vault_f.read_exact(&mut tag);
-    dbg!(&tag);
-     root_vault_f.seek(SeekFrom::Start(0))?;
     root_vault_f.seek(SeekFrom::Start(22))?;
     let mut n_entries_buffer = [0u8; 2];
     root_vault_f.read_exact(&mut n_entries_buffer)?;
     let n_of_entries = u16::from_le_bytes(n_entries_buffer);
     let offset = n_of_entries * 32;
-    dbg!(offset);
     root_vault_f.seek(SeekFrom::Start(((24 + offset) as u64)))?;
     let new_register_key = derive_key(name, &salt);
     root_vault_f.write_all(&new_register_key)?;
     root_vault_f.seek(SeekFrom::Start((22)))?;
-    root_vault_f.write_all(&((n_of_entries+1) as u16).to_le_bytes())?;
-    println!("HAMZA");
+    root_vault_f.write_all(&((n_of_entries + 1) as u16).to_le_bytes())?;
     Ok(())
 }

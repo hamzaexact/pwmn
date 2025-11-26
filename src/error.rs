@@ -43,7 +43,13 @@ pub enum CreateErr {
     VaultNotExists,
     ValidationErr,
     RegisterAlreadyExists,
-    DestroyedVaultErr
+    DestroyedVaultErr,
+}
+
+#[derive(Debug)]
+pub enum SessionErr {
+    SessionNotConnected,
+    PermissionDenied,
 }
 
 pub enum ParserToken {
@@ -60,6 +66,7 @@ impl std::error::Error for LexerErr {}
 impl std::error::Error for ParserErr {}
 impl std::error::Error for InitErr {}
 impl std::error::Error for CreateErr {}
+impl std::error::Error for SessionErr {}
 
 impl<'a> Display for LexerErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -231,10 +238,23 @@ impl std::fmt::Display for CreateErr {
             Self::DestroyedVaultErr => {
                 // todo, repair files logic
                 write!(
-                f, 
+                    f,
                     "The root vault file is missed:\n\n  ROOT VAULT\n\t|\n\t| ->rvault.bin (missed)\n\n\tRun REPAIR VAULT to repair the desroyed files(TODO)"
-            )
+                )
             }
+        }
+    }
+}
+
+impl std::fmt::Display for SessionErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::SessionNotConnected => {
+                let err_title = "Not connected to any register. Use CONNECT <name>;";
+                write!(f, "{err_title}")
+            }
+
+            _ => todo!(),
         }
     }
 }

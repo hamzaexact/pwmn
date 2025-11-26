@@ -8,6 +8,8 @@ impl CreateRegExec {
         /// VaultNotExists Error.
         storage::vault::is_vault_exisits()?;
 
+        storage::vault::is_child_vault_f_exists()?;
+
         /// Validation to make sure the name does not contain special characters.
         CreateRegExec::validate_name(name);
 
@@ -15,8 +17,6 @@ impl CreateRegExec {
         storage::vault::register_exists(name)?;
 
         storage::vault::create_register(name)?;
-
-        println!("Register Created!");
 
         Ok(())
     }

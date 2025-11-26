@@ -258,7 +258,7 @@ impl<'a> Lexer<'a> {
                     let mut word = String::new();
 
                     while let Some(&ch) = self.chars.peek() {
-                        if ch.is_alphabetic() || ch == '_' {
+                        if ch.is_alphabetic() || ch.is_digit(10) || ch == '_' {
                             word.push(ch);
                             self.next_char();
                         } else {
