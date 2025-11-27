@@ -1,11 +1,13 @@
+use crate::encryption::kdf::derive_key;
+use crate::storage;
+use bincode;
 use rpassword;
+use serde::{Deserialize, Serialize};
 use std::env::SplitPaths;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
+use storage::types::Register;
 use zeroize::Zeroize;
-
-use crate::encryption::kdf::derive_key;
-use crate::storage;
 
 pub struct CreateRegExec;
 use crate::storage::childvault::{self, ChildRootVault};
@@ -13,7 +15,7 @@ use crate::storage::childvault::{self, ChildRootVault};
 impl CreateRegExec {
     pub fn execute(name: &str) -> Result<(), Box<dyn std::error::Error>> {
         // Step 1: Validate if the root vault exists. If not, it propagates a VaultNotExists error."
-            storage::vault::is_vault_exisits()?;
+        storage::vault::is_vault_exisits()?;
 
         storage::vault::is_child_vault_f_exists()?;
 
@@ -26,18 +28,28 @@ impl CreateRegExec {
 
         storage::vault::add_to_root_vault(name)?;
 
+        CreateRegExec::insert_encrypted_empty_data(path, name)?;
+
         Ok(())
     }
 
-    pub fn insert_encrypted_empty_data(p: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
-        let mut file = OpenOptions::new().read(true).write(true).open(&p)?; // pointer
+    pub fn insert_encrypted_empty_data(
+        p: PathBuf,
+        name: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let mut file = OpenOptions::new().read(true).write(true).open(&p)?;
         // To p, because we need to move it later to fetch the private vault salt.
-        let mut password =
-            rpassword::prompt_password("Creating Vault required a password to enter with later: ")?;
+        let mut password = rpassword::prompt_password(
+            "A password is required to create the vault.\nPlease enter a password: ",
+        )?;
         let salt = childvault::ChildRootVault::get_private_salt(p)?;
         let key = derive_key(&password, &salt);
         // Zeroize the password from memory.
-        Zeroize::zeroize(&mut password); 
+        Zeroize::zeroize(&mut password);
+
+        let reg = Register::new(name);
+
+        let k: Vec<u8> = bincode::encode_to_vec(reg, bincode::config::standard())?;
 
         Ok(())
     }

@@ -1,12 +1,14 @@
 #![allow(warnings)]
 use chrono::{Local, Utc};
-use std::time::Instant;
 use rustyline::DefaultEditor;
 use rustyline::error::ReadlineError;
+use std::time::Instant;
 mod encryption;
 mod engine;
 mod error;
 mod interpreter;
+mod p_std;
+use p_std::uid::Uid;
 mod session;
 mod statements;
 mod storage;
@@ -21,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         let command = match read_command(&mut rl) {
             Ok(cmd) => {
-                let start= Instant::now();
+                let start = Instant::now();
                 match Executor::execute(&cmd, &mut session_status) {
                     Ok(_) => {}
                     Err(e) => {
