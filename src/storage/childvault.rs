@@ -24,17 +24,18 @@ pub struct ChildRootVault {
     pub magic: [u8; 4],
     pub version: u16,
     pub salt: [u8; 16],
-    pub nonce: Vec<u8>,
+    pub nonce: [u8; 12],
 }
-
 impl ChildRootVault {
     pub fn new(key: [u8; 32]) -> Result<PathBuf, DynamicError> {
+        let nonce_array = ChaCha20Poly1305::generate_nonce(&mut OsRng);
         let mut f = Self {
             magic: [0x50, 0x57, 0x4D, 0x4E],
             version: 1,
             salt: rand::random(),
-            nonce: ChaCha20Poly1305::generate_nonce(&mut OsRng).to_vec(),
+            nonce: [0u8; 12],
         };
+        f.nonce = nonce_array.into();
         let path = f.allocate_header(key)?;
         Ok(path)
     }
