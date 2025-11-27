@@ -44,6 +44,7 @@ pub enum CreateErr {
     ValidationErr,
     RegisterAlreadyExists,
     DestroyedVaultErr,
+    ShortLenErr{temp: String, target_len: u8},
 }
 
 #[derive(Debug)]
@@ -254,6 +255,12 @@ impl std::fmt::Display for CreateErr {
                     "The root vault file is missed:\n\n  ROOT VAULT\n\t|\n\t| ->rvault.bin (missed)\n\n\tRun REPAIR VAULT to repair the desroyed files(TODO)"
                 )
             }
+
+            Self::ShortLenErr { temp, target_len } => {
+                let err_msg = format!("Minimum Length for your {} must be at least {} characters", *temp, *target_len);
+                write!(f, "{err_msg}")
+            }
+
         }
     }
 }
