@@ -2,6 +2,7 @@ use crate::interpreter::token_name;
 use crate::interpreter::{Span, lexer::TokenKind};
 use std::any::type_name;
 use std::fmt::{Debug, Display, Formatter, format};
+use std::fs::write;
 
 #[derive(Debug)]
 pub enum LexerErr {
@@ -51,6 +52,7 @@ pub enum CreateErr {
 pub enum SessionErr {
     SessionNotConnected,
     PermissionDenied,
+    AnotherSessionIsRunningErr
 }
 
 #[derive(Debug)]
@@ -62,6 +64,7 @@ pub enum EncryptionErr {
 pub enum DecryptionErr {
     DecryptionErr,
 }
+
 
 pub enum ParserToken {
     Expression,
@@ -80,6 +83,7 @@ impl std::error::Error for CreateErr {}
 impl std::error::Error for SessionErr {}
 impl std::error::Error for EncryptionErr {}
 impl std::error::Error for DecryptionErr {}
+
 
 impl<'a> Display for LexerErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -272,6 +276,11 @@ impl std::fmt::Display for SessionErr {
         match self {
             Self::SessionNotConnected => {
                 let err_title = "Not connected to any register. Use CONNECT <name>";
+                write!(f, "{err_title}")
+            }
+
+            Self::AnotherSessionIsRunningErr => {
+                let err_title = "To CONNECT to a register, you must first disconnect the currently connected register";
                 write!(f, "{err_title}")
             }
 
