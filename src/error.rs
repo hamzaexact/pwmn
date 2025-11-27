@@ -52,7 +52,12 @@ pub enum CreateErr {
 pub enum SessionErr {
     SessionNotConnected,
     PermissionDenied,
-    AnotherSessionIsRunningErr
+    AnotherSessionIsRunningErr,
+}
+
+#[derive(Debug)]
+pub enum ConnectionErr {
+    VaultInvalidConnection(String),
 }
 
 #[derive(Debug)]
@@ -64,7 +69,6 @@ pub enum EncryptionErr {
 pub enum DecryptionErr {
     DecryptionErr,
 }
-
 
 pub enum ParserToken {
     Expression,
@@ -83,7 +87,7 @@ impl std::error::Error for CreateErr {}
 impl std::error::Error for SessionErr {}
 impl std::error::Error for EncryptionErr {}
 impl std::error::Error for DecryptionErr {}
-
+impl std::error::Error for ConnectionErr {}
 
 impl<'a> Display for LexerErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -256,7 +260,7 @@ impl std::fmt::Display for CreateErr {
                 // todo, repair files logic
                 write!(
                     f,
-                    "The root vault file is missed:\n\n  ROOT VAULT\n\t|\n\t| ->rvault.bin (missed)\n\n\tRun REPAIR VAULT to repair the desroyed files(TODO)"
+                    "The root vault file is missed or desroyed:\n\n  ROOT VAULT\n\t|\n\t| ->rvault.bin (missed)\n\n\tRun REPAIR VAULT to repair the desroyed files(TODO)"
                 )
             }
 
@@ -271,6 +275,20 @@ impl std::fmt::Display for CreateErr {
     }
 }
 
+impl std::fmt::Display for ConnectionErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::VaultInvalidConnection(ConnFrom) => {
+                let err_title = format!(
+                    "You request a connection to a vault that does not exist\nDouble check your Register name or use CREATE REGISTER <{}>.",
+                    ConnFrom
+                );
+                write!(f, "{err_title}")
+            }
+        }
+    }
+}
+
 impl std::fmt::Display for SessionErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -280,7 +298,7 @@ impl std::fmt::Display for SessionErr {
             }
 
             Self::AnotherSessionIsRunningErr => {
-                let err_title = "To CONNECT to a register, you must first disconnect the currently connected register";
+                let err_title = "To CREATE or CONNECT to a register, you must first disconnect the currently connected register";
                 write!(f, "{err_title}")
             }
 
