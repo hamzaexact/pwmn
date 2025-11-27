@@ -28,7 +28,7 @@ impl CreateRegExec {
 
         storage::vault::add_to_root_vault(name)?;
 
-        CreateRegExec::insert_encrypted_empty_data(path, name)?;
+        let bytes = CreateRegExec::insert_encrypted_empty_data(path, name)?;
 
         Ok(())
     }
@@ -36,7 +36,7 @@ impl CreateRegExec {
     pub fn insert_encrypted_empty_data(
         p: PathBuf,
         name: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let mut file = OpenOptions::new().read(true).write(true).open(&p)?;
         // To p, because we need to move it later to fetch the private vault salt.
         let mut password = rpassword::prompt_password(
@@ -47,10 +47,12 @@ impl CreateRegExec {
         // Zeroize the password from memory.
         Zeroize::zeroize(&mut password);
 
+        // Create an empty new record/register to use it later for CRUD operations
         let reg = Register::new(name);
 
-        let k: Vec<u8> = bincode::encode_to_vec(reg, bincode::config::standard())?;
+        // Convert the register into bytes and prepare it for encryption.
+        let reg_to_bytes: Vec<u8> = bincode::encode_to_vec(reg, bincode::config::standard())?;
 
-        Ok(())
+        Ok(reg_to_bytes)
     }
 }
