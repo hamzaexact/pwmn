@@ -1,5 +1,5 @@
-use crate::{encryption::kdf::derive_key, storage::rootvault::RootValut};
 use crate::storage;
+use crate::{encryption::kdf::derive_key, storage::rootvault::RootValut};
 use bincode;
 use rpassword;
 use serde::{Deserialize, Serialize};
@@ -9,8 +9,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use storage::types::Register;
 type DynError = Box<dyn std::error::Error>;
-use zeroize::Zeroize;
 use crate::encryption::aead;
+use zeroize::Zeroize;
 pub struct CreateRegExec;
 use crate::storage::childvault::{self, ChildRootVault};
 
@@ -34,8 +34,12 @@ impl CreateRegExec {
 
         let nonce = ChildRootVault::get_public_nonce(&path)?;
 
-        let encryped = aead::encrypt(key, nonce, data_as_bytes)?;
+        let ciphertext = aead::encrypt(key, nonce, data_as_bytes)?;
 
+        CreateRegExec::write_encrypted_data(&path, ciphertext)?;
+
+
+        println!("\nVault Created Successfully!\nUse CONNECT <{}> to connect to your register", name);
         Ok(())
     }
 
@@ -46,7 +50,7 @@ impl CreateRegExec {
         let mut file = OpenOptions::new().read(true).write(true).open(&p)?;
         // To p, because we need to move it later to fetch the private vault salt.
         let mut password = rpassword::prompt_password(
-            "A password is required to create the vault.\nPlease enter a password: ",
+            "\nA password is required to create the vault.\nPlease enter a password: ",
         )?;
         let salt = childvault::ChildRootVault::get_private_salt(p)?;
         let key = derive_key(&password, &salt);
@@ -67,7 +71,7 @@ impl CreateRegExec {
         r_vault.write_all(&ciphertext)?;
         // Flushing data slowly to disk is acceptable in normal circumstances, but during a critical moment,
         // we need to force the flush to ensure that all data has been written.
-        r_vault.flush()?; 
+        r_vault.flush()?;
         Ok(())
     }
 }
