@@ -30,7 +30,7 @@ impl CreateRegExec {
         // Store the key to avoid re-computation in subsequent function calls.
         let key = CreateRegExec::register_exists(name)?;
 
-        storage::vault::create_unique_reg_f(key)?;
+        CreateRegExec::create_unique_reg_f(key)?;
 
         let path = childvault::ChildRootVault::new(key)?;
 
@@ -38,7 +38,7 @@ impl CreateRegExec {
 
         let data_as_bytes = CreateRegExec::insert_encrypted_empty_data(&path, name)?;
 
-        let nonce = ChildRootVault::get_public_nonce(&path)?;
+        let nonce = ChildRootVault::get_child_nonce(&path)?;
 
         let ciphertext = aead::encrypt(key, nonce, data_as_bytes)?;
 
@@ -84,7 +84,7 @@ impl CreateRegExec {
                 target_len: 8,
             }));
         }
-        let salt = childvault::ChildRootVault::get_private_salt(p)?;
+        let salt = childvault::ChildRootVault::get_child_salt(p)?;
         let key = derive_key(&password, &salt);
         // Zeroize the password from memory.
         Zeroize::zeroize(&mut password);

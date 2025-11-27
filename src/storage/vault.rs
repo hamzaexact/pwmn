@@ -37,7 +37,7 @@ pub fn is_child_vault_f_exists() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn get_root_file() -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let home = env::var("HOME")?;
+    let home = env::var("HOME").map_err(|e| CreateErr::DestroyedVaultErr)?;
     Ok(PathBuf::from(&home).join(ROOT_FDNAME))
 }
 
@@ -74,5 +74,3 @@ pub fn add_to_root_vault(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     root_vault_f.write_all(&((n_of_entries + 1) as u16).to_le_bytes())?;
     Ok(())
 }
-
-
