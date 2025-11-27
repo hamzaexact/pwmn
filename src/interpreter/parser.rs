@@ -22,6 +22,9 @@ impl<'t> Parser<'t> {
             ast::Expr::Statment(ast::Stmt::Create { reg_name }) => {
                 Ok(ast::Stmt::Create { reg_name: reg_name })
             }
+            ast::Expr::Statment(ast::Stmt::Connect { reg_name }) => {
+                Ok(ast::Stmt::Create { reg_name: reg_name })
+            }
             _ => todo!(),
         }
     }
@@ -58,8 +61,8 @@ impl<'t> Parser<'t> {
                     input: self.query.to_string(),
                     tokind: expected_token,
                     span: Span {
-                        start: self.pos,
-                        end: self.pos + 1,
+                        start: self.query.len(),
+                        end: self.query.len() + 1,
                     },
                 });
             }
@@ -129,6 +132,30 @@ impl<'t> Parser<'t> {
                     TokenKind::Number(n) => {
                         self.consume(TokenKind::Number(n));
                         return Ok(ast::Expr::Number(n));
+                    }
+                    TokenKind::Connect => {
+                        self.consume(TokenKind::Connect);
+                        match self.peek_token() {
+                            Some(token) => {
+                                let (tok, kind) = token;
+                                match kind {
+                                    TokenKind::Identifier(name) => {
+                                        return Ok(ast::Expr::Statment(ast::Stmt::Connect {
+                                            reg_name: name,
+                                        }));
+                                    }
+                                    other => {
+                                        return Err(ParserErr::ExpectedIdentifier {
+                                            input: self.query.to_string(),
+                                            givenkind: other,
+                                            span: tok.span,
+                                        });
+                                    }
+                                }
+                            }
+
+                            None => unreachable!(),
+                        }
                     }
 
                     TokenKind::Init => return Ok(ast::Expr::Statment(ast::Stmt::Init)),
