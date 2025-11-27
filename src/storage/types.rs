@@ -1,4 +1,5 @@
 use crate::error::CreateErr;
+use crate::p_std::uid::Uid;
 use crate::storage::init::{FNAME, ROOT_FDNAME};
 use crate::storage::vault::is_vault_exisits;
 use bincode::{Decode, Encode};
@@ -15,7 +16,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use uuid::Uuid;
-use crate::p_std::uid::Uid;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Vault {
