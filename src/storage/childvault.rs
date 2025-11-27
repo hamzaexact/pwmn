@@ -66,7 +66,7 @@ impl ChildRootVault {
         Ok(root_file)
     }
 
-    pub fn get_private_salt(p: &PathBuf) -> Result<[u8; 16], DynamicError> {
+    pub fn get_child_salt(p: &PathBuf) -> Result<[u8; 16], DynamicError> {
         let mut file = OpenOptions::new().read(true).open(p)?;
         file.seek(SeekFrom::Start((6)))?;
         let mut salt = [0u8; 16];
@@ -74,7 +74,7 @@ impl ChildRootVault {
         Ok(salt)
     }
 
-    pub fn get_public_nonce(p: &PathBuf) -> Result<[u8; 12], DynamicError> {
+    pub fn get_child_nonce(p: &PathBuf) -> Result<[u8; 12], DynamicError> {
         let mut r_vault = OpenOptions::new().read(true).open(p)?;
         // [4] [2] [16] [12]
         //  4---6---22---34

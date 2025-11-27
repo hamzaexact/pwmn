@@ -23,7 +23,7 @@ impl<'t> Parser<'t> {
                 Ok(ast::Stmt::Create { reg_name: reg_name })
             }
             ast::Expr::Statment(ast::Stmt::Connect { reg_name }) => {
-                Ok(ast::Stmt::Create { reg_name: reg_name })
+                Ok(ast::Stmt::Connect { reg_name: reg_name })
             }
             _ => todo!(),
         }
