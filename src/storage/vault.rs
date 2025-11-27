@@ -36,7 +36,6 @@ pub fn is_child_vault_f_exists() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-
 pub fn get_root_file() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let home = env::var("HOME")?;
     Ok(PathBuf::from(&home).join(ROOT_FDNAME))
@@ -76,10 +75,4 @@ pub fn add_to_root_vault(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn create_unique_reg_f(key: [u8; 32]) -> Result<(), Box<dyn std::error::Error>> {
-    let hash_key = format!("{}{}", ".", hex::encode(key));
-    let home = env::var("HOME")?;
-    let curr_reg_folder = PathBuf::from(&home).join(ROOT_FDNAME).join(hash_key);
-    mksafe_dir(curr_reg_folder)?;
-    Ok(())
-}
+

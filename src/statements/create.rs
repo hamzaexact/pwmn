@@ -7,8 +7,8 @@ use crate::{encryption::kdf::derive_key, storage::rootvault::RootValut};
 use bincode;
 use rpassword;
 use serde::{Deserialize, Serialize};
-use std::env::SplitPaths;
-use std::fs::OpenOptions;
+use std::env::{self, SplitPaths};
+use std::fs::{OpenOptions, create_dir_all as mksafe_dir};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 use storage::types::Register;
@@ -122,7 +122,13 @@ impl CreateRegExec {
         }
         Ok(out_key)
     }
-
+    pub fn create_unique_reg_f(key: [u8; 32]) -> Result<(), Box<dyn std::error::Error>> {
+        let hash_key = format!("{}{}", ".", hex::encode(key));
+        let home = env::var("HOME")?;
+        let curr_reg_folder = PathBuf::from(&home).join(ROOT_FDNAME).join(hash_key);
+        mksafe_dir(curr_reg_folder)?;
+        Ok(())
+    }
     pub fn write_encrypted_data(p: &PathBuf, ciphertext: Vec<u8>) -> Result<(), DynError> {
         let mut r_vault = OpenOptions::new().write(true).read(true).open(p)?;
         r_vault.write_all(&ciphertext)?;
