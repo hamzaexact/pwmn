@@ -52,6 +52,16 @@ pub enum SessionErr {
     PermissionDenied,
 }
 
+#[derive(Debug)]
+pub enum EncryptionErr {
+    EncryptionErr,
+}
+
+#[derive(Debug)]
+pub enum DecryptionErr {
+    DecryptionErr,
+}
+
 pub enum ParserToken {
     Expression,
     Identifier,
@@ -67,6 +77,8 @@ impl std::error::Error for ParserErr {}
 impl std::error::Error for InitErr {}
 impl std::error::Error for CreateErr {}
 impl std::error::Error for SessionErr {}
+impl std::error::Error for EncryptionErr {}
+impl std::error::Error for DecryptionErr {}
 
 impl<'a> Display for LexerErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -256,6 +268,17 @@ impl std::fmt::Display for SessionErr {
 
             _ => todo!(),
         }
+    }
+}
+impl std::fmt::Display for EncryptionErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Couldn't encrypt the given data; something went wrong.")
+    }
+}
+
+impl std::fmt::Display for DecryptionErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Couldn't decrypt the given data; something went wrong.")
     }
 }
 
