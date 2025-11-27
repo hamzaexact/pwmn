@@ -1,3 +1,4 @@
+use crate::error::CreateErr;
 use crate::storage;
 use crate::{encryption::kdf::derive_key, storage::rootvault::RootValut};
 use bincode;
@@ -16,6 +17,9 @@ use crate::storage::childvault::{self, ChildRootVault};
 
 impl CreateRegExec {
     pub fn execute(name: &str) -> Result<(), Box<dyn std::error::Error>> {
+        if name.len() < 5 {
+            return Err(Box::new(CreateErr::ShortLenErr { temp: "'register'".to_string(), target_len: 5 }));
+        }
         // Step 1: Validate if the root vault exists. If not, it propagates a VaultNotExists error."
         storage::vault::is_vault_exisits()?;
 
@@ -52,6 +56,10 @@ impl CreateRegExec {
         let mut password = rpassword::prompt_password(
             "\nA password is required to create the vault.\nPlease enter a password: ",
         )?;
+
+        if password.len() < 8 {
+            return Err(Box::new(CreateErr::ShortLenErr { temp: "'password'".to_string(), target_len: 8 }));
+        }
         let salt = childvault::ChildRootVault::get_private_salt(p)?;
         let key = derive_key(&password, &salt);
         // Zeroize the password from memory.
