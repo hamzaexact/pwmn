@@ -1,5 +1,5 @@
 use crate::encryption::kdf;
-use crate::error::{CreateErr, SessionErr};
+use crate::error::{self, CreateErr, SessionErr};
 use crate::session::SessionConn;
 use crate::storage::init::{FNAME, ROOT_FDNAME};
 use crate::storage::{self, vault};
@@ -123,9 +123,9 @@ impl CreateRegExec {
         Ok(out_key)
     }
     pub fn create_unique_reg_f(key: [u8; 32]) -> Result<(), Box<dyn std::error::Error>> {
-        let hash_key = format!("{}{}", ".", hex::encode(key));
-        let home = env::var("HOME")?;
-        let curr_reg_folder = PathBuf::from(&home).join(ROOT_FDNAME).join(hash_key);
+        let hash_key = format!(".{}", hex::encode(key));
+        let home = dirs_next::home_dir().ok_or(error::HomeDirErr::InvalidHomeDir)?;
+        let curr_reg_folder = home.join(ROOT_FDNAME).join(hash_key);
         mksafe_dir(curr_reg_folder)?;
         Ok(())
     }

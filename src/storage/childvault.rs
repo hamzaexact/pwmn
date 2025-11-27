@@ -1,10 +1,10 @@
 use crate::error::CreateErr;
+use crate::error::HomeDirErr;
 use crate::storage::init::{FNAME, ROOT_FDNAME};
 use crate::storage::vault::is_vault_exisits;
 use argon2::password_hash::rand_core::{CryptoRng, OsRng, RngCore};
 use chacha20poly1305::{AeadCore, ChaCha20Poly1305};
 use hex;
-
 use rand::random;
 use rpassword;
 use std::io::{Read, Seek, SeekFrom, Write};
@@ -41,7 +41,7 @@ impl ChildRootVault {
     }
 
     pub fn allocate_header(&mut self, key: [u8; 32]) -> Result<PathBuf, DynamicError> {
-        let home = env::var("HOME")?;
+        let home = dirs_next::home_dir().ok_or(HomeDirErr::InvalidHomeDir)?;
         let hash_key = format!("{}{}", ".", hex::encode(key));
         let root_file = PathBuf::from(&home)
             .join(ROOT_FDNAME)

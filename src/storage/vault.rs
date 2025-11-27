@@ -4,7 +4,7 @@ use rand::rngs::adapter::ReseedingRng;
 use super::super::encryption::kdf;
 use super::init::{FNAME, ROOT_FDNAME};
 use crate::encryption::kdf::derive_key;
-use crate::error::CreateErr;
+use crate::error::{self, CreateErr};
 use std::fmt::format;
 use std::io::Read;
 use std::io::Seek;
@@ -17,8 +17,8 @@ use std::{
 };
 
 pub fn is_vault_exisits() -> Result<(), Box<dyn std::error::Error>> {
-    let home = env::var("HOME")?;
-    let root_folder = PathBuf::from(&home).join(ROOT_FDNAME);
+    let home = dirs_next::home_dir().ok_or(error::HomeDirErr::InvalidHomeDir)?;
+    let root_folder = home.join(ROOT_FDNAME);
     if !(root_folder.try_exists()?) {
         return Err(Box::new(CreateErr::VaultNotExists));
     }
@@ -37,7 +37,9 @@ pub fn is_child_vault_f_exists() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn get_root_file() -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let home = env::var("HOME").map_err(|e| CreateErr::DestroyedVaultErr)?;
+    let home = dirs_next::home_dir()
+        .ok_or(error::HomeDirErr::InvalidHomeDir)
+        .map_err(|e| CreateErr::DestroyedVaultErr)?;
     Ok(PathBuf::from(&home).join(ROOT_FDNAME))
 }
 

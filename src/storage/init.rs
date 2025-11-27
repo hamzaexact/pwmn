@@ -1,4 +1,4 @@
-use crate::error::InitErr;
+use crate::error::{self, InitErr};
 use crate::storage::rootvault::RootValut as RV;
 use std::{
     env,
@@ -11,9 +11,9 @@ pub const ROOT_FDNAME: &str = ".pwmn";
 pub const FNAME: &str = "rvault.bin"; // root vault
 
 pub fn init() -> Result<(), Box<dyn std::error::Error>> {
-    let home = env::var("HOME")?;
+    let home = dirs_next::home_dir().ok_or(error::HomeDirErr::InvalidHomeDir)?;
     // let path_loc = home + ROOT_FNAME;
-    let root_folder = PathBuf::from(&home).join(ROOT_FDNAME);
+    let root_folder = home.join(ROOT_FDNAME);
     if root_folder.try_exists()? {
         return Err(Box::new(InitErr::VaultAlreadyExists));
     }
@@ -21,7 +21,8 @@ pub fn init() -> Result<(), Box<dyn std::error::Error>> {
     RV::new()?;
     let s_msg = format!(
         "initialzed empty vault repository in {}/{}",
-        home, ROOT_FDNAME
+        env::var("HOME").unwrap(),
+        ROOT_FDNAME
     );
     println!("{s_msg}");
     Ok(())

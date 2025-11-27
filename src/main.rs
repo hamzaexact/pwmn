@@ -13,6 +13,7 @@ mod session;
 mod statements;
 mod storage;
 use crate::engine::Executor;
+use dirs_next;
 use hex;
 use session::offSessionConn::SessionConn;
 use zeroize;

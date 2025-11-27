@@ -1,4 +1,9 @@
-use crate::storage::{init::ROOT_FDNAME, types::Register};
+use crate::error::HomeDirErr;
+use crate::{
+    error,
+    storage::{init::ROOT_FDNAME, types::Register},
+};
+use bincode::error as bin_err;
 use std::{
     env,
     path::{Path, PathBuf},
@@ -13,10 +18,11 @@ pub struct SessionConn {
 
 impl SessionConn {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
+        let home_dir = dirs_next::home_dir().ok_or(HomeDirErr::InvalidHomeDir)?;
         Ok(Self {
             current_connected_register: None,
             // No connection yet! Wrap the ROOT folder until we establish a connection.
-            base_path: PathBuf::from(env::var("HOME")?).join(ROOT_FDNAME),
+            base_path: home_dir.join(ROOT_FDNAME),
         })
     }
 

@@ -69,6 +69,10 @@ pub enum EncryptionErr {
 pub enum DecryptionErr {
     DecryptionErr,
 }
+#[derive(Debug)]
+pub enum HomeDirErr {
+    InvalidHomeDir,
+}
 
 pub enum ParserToken {
     Expression,
@@ -88,6 +92,7 @@ impl std::error::Error for SessionErr {}
 impl std::error::Error for EncryptionErr {}
 impl std::error::Error for DecryptionErr {}
 impl std::error::Error for ConnectionErr {}
+impl std::error::Error for HomeDirErr {}
 
 impl<'a> Display for LexerErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -315,6 +320,34 @@ impl std::fmt::Display for EncryptionErr {
 impl std::fmt::Display for DecryptionErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Invalid password or corrupted vault data. Try Again!")
+    }
+}
+
+impl std::fmt::Display for HomeDirErr {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            r#"✖ Failed to locate the home directory.
+
+In order for this program to work properly, it needs access to your system's home directory.
+
+• macOS:
+  The program expects the HOME environment variable to be set.
+  Usually this is automatically defined. Example:
+      /Users/<username>
+
+• Linux:
+  The program expects the HOME environment variable to be set.
+  Normally this points to:
+      /home/<username>
+
+• Windows:
+  The program expects USERPROFILE (or HOMEDRIVE + HOMEPATH) to be set.
+  Usually this refers to:
+      C:\Users\<username>
+
+Please ensure your system environment variables are correctly configured and try again."#
+        )
     }
 }
 

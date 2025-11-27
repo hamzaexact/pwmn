@@ -95,7 +95,7 @@ impl VaultConnection {
         )));
     }
 
-    pub fn seek_the_request_fd(reg_name: &str) -> Result<(), DynErr> {
+    pub fn seek_the_request_vault(reg_name: &str) -> Result<(), DynErr> {
         let lower_reg_name = reg_name.to_lowercase();
         let f_hash = format!(".{}", hex::encode(lower_reg_name));
 

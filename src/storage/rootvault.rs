@@ -1,4 +1,4 @@
-use crate::error::CreateErr;
+use crate::error::{self, CreateErr};
 use crate::storage::init::{FNAME, ROOT_FDNAME};
 use crate::storage::vault::is_vault_exisits;
 use rand::random;
@@ -31,8 +31,8 @@ impl RootValut {
 
     fn allocate_header(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let k = is_vault_exisits()?;
-        let home = env::var("HOME")?;
-        let root_file = PathBuf::from(&home).join(ROOT_FDNAME).join(FNAME);
+        let home = dirs_next::home_dir().ok_or(error::HomeDirErr::InvalidHomeDir)?;
+        let root_file = home.join(ROOT_FDNAME).join(FNAME);
         let mut file = OpenOptions::new()
             .read(true)
             .write(true)
