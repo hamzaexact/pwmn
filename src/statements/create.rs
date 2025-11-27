@@ -1,4 +1,5 @@
-use crate::error::CreateErr;
+use crate::error::{CreateErr, SessionErr};
+use crate::session::SessionConn;
 use crate::storage;
 use crate::{encryption::kdf::derive_key, storage::rootvault::RootValut};
 use bincode;
@@ -16,14 +17,12 @@ pub struct CreateRegExec;
 use crate::storage::childvault::{self, ChildRootVault};
 
 impl CreateRegExec {
-    pub fn execute(name: &str) -> Result<(), Box<dyn std::error::Error>> {
-        if name.len() < 5 {
-            return Err(Box::new(CreateErr::ShortLenErr {
-                temp: "'register'".to_string(),
-                target_len: 5,
-            }));
-        }
-        // Step 1: Validate if the root vault exists. If not, it propagates a VaultNotExists error."
+    pub fn execute(name: &str, session: &SessionConn) -> Result<(), Box<dyn std::error::Error>> {
+
+        // Validate the input before proceeding.
+        CreateRegExec::pre_validation(name, session)?;
+
+        // "Validate if the root vault exists. If not, propagate a VaultNotExists error."
         storage::vault::is_vault_exisits()?;
 
         storage::vault::is_child_vault_f_exists()?;
@@ -52,6 +51,22 @@ impl CreateRegExec {
         Ok(())
     }
 
+    pub fn pre_validation(name: &str, session: &SessionConn) -> Result<(), DynError> {
+        // Validate the name's length first.
+        if name.len() < 5 {
+            return Err(Box::new(CreateErr::ShortLenErr {
+                temp: "'register'".to_string(),
+                target_len: 5,
+            }));
+        }
+
+        // Validate the session to continue with further steps, there should be no other connection.
+
+        if session.is_connected() { // returns bool 
+            return Err(Box::new(SessionErr::AnotherSessionIsRunningErr));
+        }
+        Ok(())
+    }
     pub fn insert_encrypted_empty_data(
         p: &PathBuf,
         name: &str,
@@ -85,7 +100,7 @@ impl CreateRegExec {
     pub fn write_encrypted_data(p: &PathBuf, ciphertext: Vec<u8>) -> Result<(), DynError> {
         let mut r_vault = OpenOptions::new().write(true).read(true).open(p)?;
         r_vault.write_all(&ciphertext)?;
-        // Flushing data slowly to disk is acceptable in normal circumstances, but during a critical moment,
+        // Flushing data slowly to disk but because we're during a critical moment,
         // we need to force the flush to ensure that all data has been written.
         r_vault.flush()?;
         Ok(())
