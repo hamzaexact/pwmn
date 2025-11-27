@@ -1,14 +1,16 @@
-use crate::encryption::kdf::derive_key;
+use crate::{encryption::kdf::derive_key, storage::rootvault::RootValut};
 use crate::storage;
 use bincode;
 use rpassword;
 use serde::{Deserialize, Serialize};
 use std::env::SplitPaths;
 use std::fs::OpenOptions;
+use std::io::Write;
 use std::path::PathBuf;
 use storage::types::Register;
+type DynError = Box<dyn std::error::Error>;
 use zeroize::Zeroize;
-
+use crate::encryption::aead;
 pub struct CreateRegExec;
 use crate::storage::childvault::{self, ChildRootVault};
 
@@ -28,13 +30,17 @@ impl CreateRegExec {
 
         storage::vault::add_to_root_vault(name)?;
 
-        let bytes = CreateRegExec::insert_encrypted_empty_data(path, name)?;
+        let data_as_bytes = CreateRegExec::insert_encrypted_empty_data(&path, name)?;
+
+        let nonce = ChildRootVault::get_public_nonce(&path)?;
+
+        let encryped = aead::encrypt(key, nonce, data_as_bytes)?;
 
         Ok(())
     }
 
     pub fn insert_encrypted_empty_data(
-        p: PathBuf,
+        p: &PathBuf,
         name: &str,
     ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let mut file = OpenOptions::new().read(true).write(true).open(&p)?;
@@ -54,5 +60,14 @@ impl CreateRegExec {
         let reg_to_bytes: Vec<u8> = bincode::encode_to_vec(reg, bincode::config::standard())?;
 
         Ok(reg_to_bytes)
+    }
+
+    pub fn write_encrypted_data(p: &PathBuf, ciphertext: Vec<u8>) -> Result<(), DynError> {
+        let mut r_vault = OpenOptions::new().write(true).read(true).open(p)?;
+        r_vault.write_all(&ciphertext)?;
+        // Flushing data slowly to disk is acceptable in normal circumstances, but during a critical moment,
+        // we need to force the flush to ensure that all data has been written.
+        r_vault.flush()?; 
+        Ok(())
     }
 }
