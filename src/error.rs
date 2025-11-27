@@ -44,7 +44,7 @@ pub enum CreateErr {
     ValidationErr,
     RegisterAlreadyExists,
     DestroyedVaultErr,
-    ShortLenErr{temp: String, target_len: u8},
+    ShortLenErr { temp: String, target_len: u8 },
 }
 
 #[derive(Debug)]
@@ -257,10 +257,12 @@ impl std::fmt::Display for CreateErr {
             }
 
             Self::ShortLenErr { temp, target_len } => {
-                let err_msg = format!("Minimum Length for your {} must be at least {} characters", *temp, *target_len);
+                let err_msg = format!(
+                    "Minimum Length for your {} must be at least {} characters",
+                    *temp, *target_len
+                );
                 write!(f, "{err_msg}")
             }
-
         }
     }
 }
