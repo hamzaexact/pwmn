@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 let end = start.elapsed();
-                println!("Time elapsed: {:.3} ms", end.as_secs_f64() * 1000.0);
+                println!("\nTime elapsed: {:.3} ms", end.as_secs_f64() * 1000.0);
                 cmd
             }
             Err(ReadlineError::Interrupted) => {
