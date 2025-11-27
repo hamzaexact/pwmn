@@ -278,7 +278,7 @@ impl std::fmt::Display for EncryptionErr {
 
 impl std::fmt::Display for DecryptionErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Couldn't decrypt the given data; something went wrong.")
+        write!(f, "Invalid password or corrupted vault data. Try Again!")
     }
 }
 
