@@ -36,30 +36,6 @@ pub fn is_child_vault_f_exists() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn register_exists(name: &str) -> Result<[u8; 32], Box<dyn std::error::Error>> {
-    let name = name.to_lowercase();
-    let root_folder = get_root_file()?;
-    let mut vault_f = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(root_folder.join(FNAME))?;
-    vault_f.seek(SeekFrom::Start((22)));
-    let mut n_entries_buffer = [0u8; 2];
-    vault_f.read_exact(&mut n_entries_buffer);
-    let n_entries = u16::from_le_bytes(n_entries_buffer);
-    let out_key = kdf::derive_key(name.as_str(), &get_salt()?);
-    if n_entries == 0 {
-        return Ok(out_key);
-    }
-    for _ in 0..n_entries {
-        let mut current_cell_key = [0u8; 32];
-        vault_f.read_exact(&mut current_cell_key)?;
-        if out_key == current_cell_key {
-            return Err(Box::new(CreateErr::RegisterAlreadyExists));
-        }
-    }
-    Ok(out_key)
-}
 
 pub fn get_root_file() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let home = env::var("HOME")?;
