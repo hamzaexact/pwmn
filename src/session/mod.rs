@@ -1,2 +1,2 @@
 pub mod offSessionConn;
-pub use offSessionConn::OffSessionConn;
+pub use offSessionConn::SessionConn;

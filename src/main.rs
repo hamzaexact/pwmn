@@ -14,12 +14,12 @@ mod statements;
 mod storage;
 use crate::engine::Executor;
 use hex;
-use session::offSessionConn::OffSessionConn;
+use session::offSessionConn::SessionConn;
 use zeroize;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rl = DefaultEditor::new()?;
-    let mut session_status = OffSessionConn::new()?;
+    let mut session_status = SessionConn::new()?;
     loop {
         let command = match read_command(&mut rl) {
             Ok(cmd) => {
