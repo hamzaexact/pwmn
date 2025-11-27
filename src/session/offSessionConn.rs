@@ -4,15 +4,18 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub struct OffSessionConn {
-    current_connected_register: Option<Register>, // might be connected ,might be not
-    base_path: PathBuf,                           // path to the current active vault
+pub struct SessionConn {
+    // May be connected, may not.
+    current_connected_register: Option<Register>,
+    // Path to the current active vault.
+    base_path: PathBuf,
 }
 
-impl OffSessionConn {
+impl SessionConn {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         Ok(Self {
             current_connected_register: None,
+            // No connection yet! Wrap the ROOT folder until we establish a connection.
             base_path: PathBuf::from(env::var("HOME")?).join(ROOT_FDNAME),
         })
     }
@@ -33,6 +36,7 @@ impl OffSessionConn {
     }
 
     pub fn get_reg_as_immt(&self) -> Result<&Register, ()> {
+        // TODO()! Implement SessionErr
         match self.current_connected_register.as_ref() {
             Some(reg) => Ok(&reg),
             None => Err(()),
@@ -40,7 +44,7 @@ impl OffSessionConn {
     }
 
     pub fn get_reg_as_mut(&mut self) -> Result<&mut Register, ()> {
-        // TODO()! SessionErr
+        // TODO()! Implement SessionErr
         match &mut self.current_connected_register {
             Some(reg) => Ok(reg),
             _ => Err(()),
