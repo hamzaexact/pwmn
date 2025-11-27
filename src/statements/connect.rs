@@ -39,8 +39,8 @@ impl VaultConnection {
         //            R_VAULT Exists
         // It's highly unlikely that this function will return an error. However, if it does,
         // it suggests someone is manipulating the binary file or has removed it entirely.
-        // A possible solution is to iterate over all folders in the root directory, 
-        // decrypt their hashes, and add them to R_VAULT as new keys (ORDER DOES NOT MATTER). 
+        // A possible solution is to iterate over all folders in the root directory,
+        // decrypt their hashes, and add them to R_VAULT as new keys (ORDER DOES NOT MATTER).
         // This task can be implemented later.
         storage::vault::is_child_vault_f_exists()?;
 
@@ -67,10 +67,21 @@ impl VaultConnection {
         let mut root_vault = OpenOptions::new()
             .read(true)
             .open(parent_file_p.join(FNAME))?;
+
+        // The Vault is composed of 4 fields.
+        // [M 4 bytes] [V 2 bytes] [S 16 Bytes] [N 2 bytes]
+        //   MAGIC       VERSION       SALT      N_OF_REGS
+        // We can easily jump to the exact location where
+        // the number of registers is stored.
         root_vault.seek(SeekFrom::Start((22)))?;
         let mut n_of_regs_buffer = [0u8; 2];
         root_vault.read_exact(&mut n_of_regs_buffer)?;
         let in_key = derive_key(&lower_reg_name, &get_salt()?);
+
+        // Fortunately, if there are no keys, the program won't crash
+        // thanks to the first two functions that ensure the existence
+        // of the root and root file. If there are keys, it simply means
+        // there are no registers yet, not a problem with the VAULT.
         for _ in 0..u16::from_le_bytes(n_of_regs_buffer) {
             let mut out_key = [0u8; 32];
             root_vault.read_exact(&mut out_key)?;
@@ -79,9 +90,15 @@ impl VaultConnection {
                 return Ok(());
             }
         }
-
         return Err(Box::new(error::ConnectionErr::VaultInvalidConnection(
             (reg_name.to_string()),
         )));
+    }
+
+    pub fn seek_the_request_fd(reg_name: &str) -> Result<(), DynErr> {
+        let lower_reg_name = reg_name.to_lowercase();
+        let f_hash = format!(".{}", hex::encode(lower_reg_name));
+
+        Ok(())
     }
 }
