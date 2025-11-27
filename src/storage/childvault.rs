@@ -66,11 +66,23 @@ impl ChildRootVault {
         Ok(root_file)
     }
 
-    pub fn get_private_salt(p: PathBuf) -> Result<[u8; 16], DynamicError> {
+    pub fn get_private_salt(p: &PathBuf) -> Result<[u8; 16], DynamicError> {
         let mut file = OpenOptions::new().read(true).open(p)?;
         file.seek(SeekFrom::Start((6)))?;
         let mut salt = [0u8; 16];
         file.read_exact(&mut salt);
         Ok(salt)
+    }
+
+    pub fn get_public_nonce(p: &PathBuf) -> Result<[u8; 12] , DynamicError> {
+        let mut r_vault = OpenOptions::new().read(true).open(p)?;
+        // [4] [2] [16] [12]
+        //  4---6---22---34 
+        // Basic position calculation by using prefix sum
+        r_vault.seek(SeekFrom::Start((22)))?;
+        let mut nonce_buf = [0u8;12];
+        r_vault.read_exact(&mut nonce_buf)?;
+
+        Ok(nonce_buf)
     }
 }
