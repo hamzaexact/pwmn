@@ -15,7 +15,7 @@ mod storage;
 use crate::engine::Executor;
 use dirs_next;
 use hex;
-use session::offSessionConn::SessionConn;
+use session::sessionConn::SessionConn;
 use zeroize;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

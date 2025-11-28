@@ -42,7 +42,7 @@ impl ChildRootVault {
 
     pub fn allocate_header(&mut self, key: [u8; 32]) -> Result<PathBuf, DynamicError> {
         let home = dirs_next::home_dir().ok_or(HomeDirErr::InvalidHomeDir)?;
-        let hash_key = format!("{}{}", ".", hex::encode(key));
+        let hash_key = format!("{}{}", ".", hex::encode(key)); 
         let root_file = PathBuf::from(&home)
             .join(ROOT_FDNAME)
             .join(hash_key)
