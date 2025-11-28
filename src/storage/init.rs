@@ -2,7 +2,7 @@ use crate::error::{self, InitErr};
 use crate::storage::parentvault::ParentVault;
 use std::{
     env,
-    fs::{self, File, OpenOptions as OO, create_dir_all as mksafe_dir},
+    fs::{self, File, create_dir_all as mksafe_dir},
     path::{self, Path, PathBuf},
 };
 

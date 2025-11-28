@@ -1,10 +1,12 @@
+use crate::error::VaultValidationErr;
+use anyhow::ensure;
 use rand::rngs::adapter::ReseedingRng;
-
 // use crate::encryption::kdf;
 use super::super::encryption::kdf;
 use super::init::{PARENT_FD_NAME, PARENT_FL_NAME};
 use crate::encryption::kdf::derive_key;
 use crate::error::{self, CreateErr};
+use crate::storage::childvault::VAULT_N;
 use std::fmt::format;
 use std::io::Read;
 use std::io::Seek;
@@ -16,7 +18,26 @@ use std::{
     path::PathBuf,
 };
 
-pub fn is_vault_exisits() -> Result<(), Box<dyn std::error::Error>> {
+type DynamicErr = Box<dyn std::error::Error>;
+
+pub fn validate_f_header(p: PathBuf) -> Result<(), DynamicErr> {
+    let mut t_file = OpenOptions::new().read(true).open(p)?;
+    t_file.seek(SeekFrom::Start(0));
+    let mut t_file_magic = [0u8; 4];
+    let mut t_file_version = [0u8; 2];
+    t_file.read_exact(&mut t_file_magic)?;
+    t_file.read_exact(&mut t_file_version)?;
+    if t_file_magic != *b"PWMN" {
+        return Err(Box::new(VaultValidationErr::MismatchedFileHeader));
+    }
+
+    if u16::from_le_bytes(t_file_version) != 1 {
+        return (Err(Box::new(error::VaultValidationErr::MismatchedFileHeader)));
+    }
+    Ok(())
+}
+
+pub fn is_parent_vault_exisits() -> Result<(), Box<dyn std::error::Error>> {
     let home = dirs_next::home_dir().ok_or(error::HomeDirErr::InvalidHomeDir)?;
     let root_folder = home.join(PARENT_FD_NAME);
     if !(root_folder.try_exists()?) {
@@ -25,7 +46,7 @@ pub fn is_vault_exisits() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-pub fn is_child_vault_f_exists() -> Result<(), Box<dyn std::error::Error>> {
+pub fn is_parent_f_exists() -> Result<PathBuf, Box<dyn std::error::Error>> {
     // if the root_folder exists but the child vault file is missed somehow
     //
     let root_folder = get_root_file()?;
@@ -33,7 +54,7 @@ pub fn is_child_vault_f_exists() -> Result<(), Box<dyn std::error::Error>> {
         return Err(Box::new(CreateErr::DestroyedVaultErr));
     }
 
-    Ok(())
+    Ok(root_folder.join(PARENT_FL_NAME))
 }
 
 pub fn get_root_file() -> Result<PathBuf, Box<dyn std::error::Error>> {

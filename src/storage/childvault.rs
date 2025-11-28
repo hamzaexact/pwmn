@@ -1,7 +1,7 @@
 use crate::error::CreateErr;
 use crate::error::HomeDirErr;
 use crate::storage::init::{PARENT_FD_NAME, PARENT_FL_NAME};
-use crate::storage::vault_utl::is_vault_exisits;
+use crate::storage::vault_utl::is_parent_vault_exisits;
 use argon2::password_hash::rand_core::{CryptoRng, OsRng, RngCore};
 use chacha20poly1305::{AeadCore, ChaCha20Poly1305};
 use hex;
@@ -15,7 +15,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const VAULT: &str = "vault.bin";
+pub const VAULT_N: &str = "vault.bin";
 
 type DynamicError = Box<dyn std::error::Error>;
 
@@ -29,6 +29,7 @@ pub struct Vault {
 impl Vault {
     pub fn new(key: [u8; 32]) -> Result<PathBuf, DynamicError> {
         let nonce_array = ChaCha20Poly1305::generate_nonce(&mut OsRng);
+        println!("{:?}",[0x50, 0x57, 0x4D, 0x4E]);
         let mut f = Self {
             magic: [0x50, 0x57, 0x4D, 0x4E],
             version: 1,
@@ -46,17 +47,17 @@ impl Vault {
         let root_file = PathBuf::from(&home)
             .join(PARENT_FD_NAME)
             .join(hash_key)
-            .join(VAULT);
+            .join(VAULT_N);
         let mut file = OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
             .open(&root_file)?;
         let mut buffer: Vec<u8> = vec![];
-        buffer.extend_from_slice(&self.magic); // magic 4bytes 
-        buffer.extend_from_slice(&self.version.to_le_bytes()); // version 2bytes
+        buffer.extend_from_slice(&self.magic); // magic 4 bytes 
+        buffer.extend_from_slice(&self.version.to_le_bytes()); // version 2 bytes
         buffer.extend_from_slice(&self.salt); // salt 16 bytes needs later to derive reg hash
-        buffer.extend_from_slice(&self.nonce); // 12 bytes
+        buffer.extend_from_slice(&self.nonce); // 12 to_le_bytes
 
         /// number of registers 2 bytes, we need this to iterate over N number of registers  to
         /// match the given input against the stored registers, since the registers would be
