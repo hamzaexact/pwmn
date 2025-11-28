@@ -10,14 +10,14 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct RootValut {
+pub struct ParentVault {
     pub magic: [u8; 4],
     pub version: u16,
     pub salt: [u8; 16],
     pub n_regs: u16,
 }
 
-impl RootValut {
+impl ParentVault {
     pub fn new() -> Result<(), Box<dyn std::error::Error>> {
         let mut f = Self {
             magic: [0x50, 0x57, 0x4D, 0x4E],

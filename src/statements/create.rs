@@ -3,7 +3,7 @@ use crate::error::{self, CreateErr, SessionErr};
 use crate::session::SessionConn;
 use crate::storage::init::{FNAME, ROOT_FDNAME};
 use crate::storage::{self, vault_utl};
-use crate::{encryption::kdf::derive_key, storage::rootvault::RootValut};
+use crate::{encryption::kdf::derive_key, storage::parentvault::ParentVault};
 use bincode;
 use rpassword;
 use serde::{Deserialize, Serialize};
