@@ -11,7 +11,7 @@ use crate::{
     storage::{
         self,
         init::FNAME,
-        vault::{get_root_file, get_salt},
+        vault_utl::{get_root_file, get_salt},
     },
 };
 type DynErr = Box<dyn std::error::Error>;
@@ -30,7 +30,7 @@ impl VaultConnection {
         //
         //
         // If not, return an error stating that the repository needs to be initialized (INIT).
-        storage::vault::is_vault_exisits()?;
+        storage::vault_utl::is_vault_exisits()?;
 
         // Check if ROOT
         //          \
@@ -42,7 +42,7 @@ impl VaultConnection {
         // A possible solution is to iterate over all folders in the root directory,
         // decrypt their hashes, and add them to R_VAULT as new keys (ORDER DOES NOT MATTER).
         // This task can be implemented later.
-        storage::vault::is_child_vault_f_exists()?;
+        storage::vault_utl::is_child_vault_f_exists()?;
 
         // Using a create validation function here would be missing,
         // the first one (which belongs to Create)

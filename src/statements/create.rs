@@ -2,7 +2,7 @@ use crate::encryption::kdf;
 use crate::error::{self, CreateErr, SessionErr};
 use crate::session::SessionConn;
 use crate::storage::init::{FNAME, ROOT_FDNAME};
-use crate::storage::{self, vault};
+use crate::storage::{self, vault_utl};
 use crate::{encryption::kdf::derive_key, storage::rootvault::RootValut};
 use bincode;
 use rpassword;
@@ -23,9 +23,9 @@ impl CreateRegExec {
         CreateRegExec::pre_validation(name, session)?;
 
         // "Validate if the root vault exists. If not, propagate a VaultNotExists error."
-        storage::vault::is_vault_exisits()?;
+        storage::vault_utl::is_vault_exisits()?;
 
-        storage::vault::is_child_vault_f_exists()?;
+        storage::vault_utl::is_child_vault_f_exists()?;
 
         // Store the key to avoid re-computation in subsequent function calls.
         let key = CreateRegExec::register_exists(name)?;
@@ -34,7 +34,7 @@ impl CreateRegExec {
 
         let path = childvault::Vault::new(key)?;
 
-        storage::vault::add_to_root_vault(name)?;
+        storage::vault_utl::add_to_root_vault(name)?;
 
         let data_as_bytes = CreateRegExec::insert_encrypted_empty_data(&path, name)?;
 
@@ -100,7 +100,7 @@ impl CreateRegExec {
 
     pub fn register_exists(name: &str) -> Result<[u8; 32], Box<dyn std::error::Error>> {
         let name = name.to_lowercase();
-        let root_folder = storage::vault::get_root_file()?;
+        let root_folder = storage::vault_utl::get_root_file()?;
         let mut vault_f = OpenOptions::new()
             .read(true)
             .write(true)
@@ -109,7 +109,7 @@ impl CreateRegExec {
         let mut n_entries_buffer = [0u8; 2];
         vault_f.read_exact(&mut n_entries_buffer);
         let n_entries = u16::from_le_bytes(n_entries_buffer);
-        let out_key = kdf::derive_key(name.as_str(), &vault::get_salt()?);
+        let out_key = kdf::derive_key(name.as_str(), &vault_utl::get_salt()?);
         if n_entries == 0 {
             return Ok(out_key);
         }

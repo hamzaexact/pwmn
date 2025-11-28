@@ -1,6 +1,6 @@
 use crate::error::{self, CreateErr};
 use crate::storage::init::{FNAME, ROOT_FDNAME};
-use crate::storage::vault::is_vault_exisits;
+use crate::storage::vault_utl::is_vault_exisits;
 use rand::random;
 use std::io::Write;
 use std::{

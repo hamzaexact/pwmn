@@ -12,7 +12,7 @@ pub const FNAME: &str = "rvault.bin"; // root vault
 
 pub fn init() -> Result<(), Box<dyn std::error::Error>> {
     let home = dirs_next::home_dir().ok_or(error::HomeDirErr::InvalidHomeDir)?;
-    // let path_loc = home + ROOT_FNAME;
+    
     let root_folder = home.join(ROOT_FDNAME);
     if root_folder.try_exists()? {
         return Err(Box::new(InitErr::VaultAlreadyExists));
