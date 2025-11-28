@@ -23,9 +23,9 @@ impl CreateRegExec {
         CreateRegExec::pre_validation(name, session)?;
 
         // "Validate if the root vault exists. If not, propagate a VaultNotExists error."
-        storage::vault_utl::is_vault_exisits()?;
+        storage::vault_utl::is_parent_vault_exisits()?;
 
-        storage::vault_utl::is_child_vault_f_exists()?;
+        storage::vault_utl::is_parent_f_exists()?;
 
         // Store the key to avoid re-computation in subsequent function calls.
         let key = CreateRegExec::register_exists(name)?;
@@ -131,6 +131,7 @@ impl CreateRegExec {
     }
     pub fn write_encrypted_data(p: &PathBuf, ciphertext: Vec<u8>) -> Result<(), DynError> {
         let mut r_vault = OpenOptions::new().write(true).read(true).open(p)?;
+        r_vault.seek(SeekFrom::Start((34)));
         r_vault.write_all(&ciphertext)?;
         // Flushing data slowly to disk but because we're during a critical moment,
         // we need to force the flush to ensure that all data has been written.
