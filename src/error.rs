@@ -3,6 +3,7 @@ use crate::interpreter::{Span, lexer::TokenKind};
 use std::any::type_name;
 use std::fmt::{Debug, Display, Formatter, format};
 use std::fs::write;
+use thiserror::Error;
 
 #[derive(Debug)]
 pub enum LexerErr {
@@ -349,6 +350,23 @@ In order for this program to work properly, it needs access to your system's hom
 Please ensure your system environment variables are correctly configured and try again."#
         )
     }
+}
+
+// Switched to the `thiserror` crate.
+
+#[derive(Error, Debug)]
+pub enum VaultValidationErr {
+    // This error would be propagated if the header does not match the original header.
+    #[error("The Vault file might be damaged or manipulated.")]
+    UnableToValidateVault,
+
+    #[error(
+        " Couldn't locate the requested vault - it may have been deleted manually.\n\tThe file will be deallocated from the parent file. Please create a new one instead."
+    )]
+    UnableToSeekVault,
+
+    #[error("Mismatched File Header; The file may have been manipulated or destroyed.")]
+    MismatchedFileHeader,
 }
 
 fn err_formatter(
