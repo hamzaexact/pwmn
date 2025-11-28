@@ -20,13 +20,13 @@ const VAULT: &str = "vault.bin";
 type DynamicError = Box<dyn std::error::Error>;
 
 #[derive(Debug)]
-pub struct ChildRootVault {
+pub struct Vault {
     pub magic: [u8; 4],
     pub version: u16,
     pub salt: [u8; 16],
     pub nonce: [u8; 12],
 }
-impl ChildRootVault {
+impl Vault {
     pub fn new(key: [u8; 32]) -> Result<PathBuf, DynamicError> {
         let nonce_array = ChaCha20Poly1305::generate_nonce(&mut OsRng);
         let mut f = Self {
@@ -42,7 +42,7 @@ impl ChildRootVault {
 
     pub fn allocate_header(&mut self, key: [u8; 32]) -> Result<PathBuf, DynamicError> {
         let home = dirs_next::home_dir().ok_or(HomeDirErr::InvalidHomeDir)?;
-        let hash_key = format!("{}{}", ".", hex::encode(key)); 
+        let hash_key = format!("{}{}", ".", hex::encode(key));
         let root_file = PathBuf::from(&home)
             .join(ROOT_FDNAME)
             .join(hash_key)

@@ -16,7 +16,7 @@ type DynError = Box<dyn std::error::Error>;
 use crate::encryption::aead;
 use zeroize::Zeroize;
 pub struct CreateRegExec;
-use crate::storage::childvault::{self, ChildRootVault};
+use crate::storage::childvault::{self, Vault};
 impl CreateRegExec {
     pub fn execute(name: &str, session: &SessionConn) -> Result<(), Box<dyn std::error::Error>> {
         // Validate the input before proceeding.
@@ -32,13 +32,13 @@ impl CreateRegExec {
 
         CreateRegExec::create_unique_reg_f(key)?;
 
-        let path = childvault::ChildRootVault::new(key)?;
+        let path = childvault::Vault::new(key)?;
 
         storage::vault::add_to_root_vault(name)?;
 
         let data_as_bytes = CreateRegExec::insert_encrypted_empty_data(&path, name)?;
 
-        let nonce = ChildRootVault::get_child_nonce(&path)?;
+        let nonce = Vault::get_child_nonce(&path)?;
 
         let ciphertext = aead::encrypt(key, nonce, data_as_bytes)?;
 
@@ -84,7 +84,7 @@ impl CreateRegExec {
                 target_len: 8,
             }));
         }
-        let salt = childvault::ChildRootVault::get_child_salt(p)?;
+        let salt = childvault::Vault::get_child_salt(p)?;
         let key = derive_key(&password, &salt);
         // Zeroize the password from memory.
         Zeroize::zeroize(&mut password);
