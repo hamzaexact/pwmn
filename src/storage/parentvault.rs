@@ -1,6 +1,6 @@
 use crate::error::{self, CreateErr};
-use crate::storage::init::{PARENT_FL_NAME, PARENT_FD_NAME};
-use crate::storage::vault_utl::is_vault_exisits;
+use crate::storage::init::{PARENT_FD_NAME, PARENT_FL_NAME};
+use crate::storage::vault_utl::is_parent_vault_exisits;
 use rand::random;
 use std::io::Write;
 use std::{
@@ -30,7 +30,7 @@ impl ParentVault {
     }
 
     fn allocate_header(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let k = is_vault_exisits()?;
+        let k = is_parent_vault_exisits()?;
         let home = dirs_next::home_dir().ok_or(error::HomeDirErr::InvalidHomeDir)?;
         let root_file = home.join(PARENT_FD_NAME).join(PARENT_FL_NAME);
         let mut file = OpenOptions::new()

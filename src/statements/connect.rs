@@ -1,6 +1,7 @@
 use std::{
     fs::OpenOptions,
     io::{Read, Seek, SeekFrom},
+    path::PathBuf,
 };
 
 use super::create;
@@ -10,6 +11,7 @@ use crate::{
     session::SessionConn,
     storage::{
         self,
+        childvault::VAULT_N,
         init::PARENT_FL_NAME,
         vault_utl::{get_root_file, get_salt},
     },
@@ -23,27 +25,34 @@ impl VaultConnection {
         // It's generally better to reuse function.
         create::CreateRegExec::pre_validation(reg_name, &session)?;
 
-        // Check if ROOT Exists
+        // Check if Parent Exists
         //            \
         //             \
-        //             R_VAULT
+        //              \
+        //            P_VAULT
         //
         //
         // If not, return an error stating that the repository needs to be initialized (INIT).
-        storage::vault_utl::is_vault_exisits()?;
+        //
+        storage::vault_utl::is_parent_vault_exisits()?;
 
-        // Check if ROOT
-        //          \
+        // Check if Parent
         //           \
         //            \
-        //            R_VAULT Exists
+        //             \
+        //          P_VAULT Exists
+        //
         // It's highly unlikely that this function will return an error. However, if it does,
         // it suggests someone is manipulating the binary file or has removed it entirely.
         // A possible solution is to iterate over all folders in the root directory,
         // decrypt their hashes, and add them to R_VAULT as new keys (ORDER DOES NOT MATTER).
         // This task can be implemented later.
-        storage::vault_utl::is_child_vault_f_exists()?;
+        let parent_p = storage::vault_utl::is_parent_f_exists()?;
 
+        // Since the parent folder and its files both exist,
+        // we need to validate the file against the MAGIC and the VERSION.
+        //
+        storage::vault_utl::validate_f_header(parent_p)?;
         // Using a create validation function here would be missing,
         // the first one (which belongs to Create)
         // returns AlreadyExistsErr with a key if it's successful,
@@ -57,11 +66,22 @@ impl VaultConnection {
         // We should unwrap the error if we initially thought it didn't exist but found it,
         // and unwrap NotExists to get the key in that case.
         // I'll leave this to do for later improvement, lets stick with this one for a moment.
-        VaultConnection::is_register_exisits(reg_name)?;
+
+        // We need to get the key here in case the function fails
+        // to reach it so that we can properly deallocate the register
+        let in_key = VaultConnection::is_register_exisits(reg_name)?;
+
+        // Seeking to register with its path or return an error,
+        // the path is required to decrypt the ciphertext later.
+        let child_p = VaultConnection::seek_the_request_vault(reg_name, in_key)?;
+
+        // We validate the child file path as well to prevent 
+        // reading unknown or unmatched file types.
+        storage::vault_utl::validate_f_header(child_p)?;
 
         Ok(())
     }
-    pub fn is_register_exisits(reg_name: &str) -> Result<(), DynErr> {
+    pub fn is_register_exisits(reg_name: &str) -> Result<[u8; 32], DynErr> {
         let lower_reg_name = reg_name.to_lowercase();
         let parent_file_p = get_root_file()?;
         let mut root_vault = OpenOptions::new()
@@ -87,7 +107,7 @@ impl VaultConnection {
             root_vault.read_exact(&mut out_key)?;
 
             if in_key == out_key {
-                return Ok(());
+                return Ok(in_key);
             }
         }
         return Err(Box::new(error::ConnectionErr::VaultInvalidConnection(
@@ -95,10 +115,15 @@ impl VaultConnection {
         )));
     }
 
-    pub fn seek_the_request_vault(reg_name: &str) -> Result<(), DynErr> {
+    pub fn seek_the_request_vault(reg_name: &str, key: [u8; 32]) -> Result<PathBuf, DynErr> {
         let lower_reg_name = reg_name.to_lowercase();
-        let f_hash = format!(".{}", hex::encode(lower_reg_name));
-
-        Ok(())
+        let f_hash = format!(".{}", hex::encode(key));
+        let parent_p = get_root_file()?;
+        let req_p = PathBuf::from(parent_p).join(f_hash).join(VAULT_N);
+        if !req_p.try_exists()? {
+            return Err(Box::new(error::VaultValidationErr::UnableToSeekVault));
+        }
+        // deallocated the key later.
+        Ok(req_p)
     }
 }
