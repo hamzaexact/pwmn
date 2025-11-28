@@ -30,6 +30,14 @@ impl CreateRegExec {
         // Store the key to avoid re-computation in subsequent function calls.
         let key = CreateRegExec::register_exists(name)?;
 
+
+        // TODO()! -> need to modify this function for the given situation.
+        // We create a unique folder and add it to the parent vault, 
+        // which may cause other functions to fail. 
+        // This would result in writing a garbage key 
+        // that wastes space and prevents creating another 
+        // register with the same name.
+
         CreateRegExec::create_unique_reg_f(key)?;
 
         let path = childvault::Vault::new(key)?;
