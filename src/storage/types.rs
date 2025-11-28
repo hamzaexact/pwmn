@@ -1,6 +1,6 @@
 use crate::error::CreateErr;
 use crate::p_std::uid::Uid;
-use crate::storage::init::{FNAME, ROOT_FDNAME};
+use crate::storage::init::{PARENT_FD_NAME, PARENT_FL_NAME};
 use crate::storage::vault_utl::is_vault_exisits;
 use bincode::{Decode, Encode};
 use chacha20poly1305::aead::generic_array::typenum::NotEq;

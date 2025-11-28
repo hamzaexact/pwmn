@@ -1,6 +1,6 @@
 use crate::error::CreateErr;
 use crate::error::HomeDirErr;
-use crate::storage::init::{FNAME, ROOT_FDNAME};
+use crate::storage::init::{PARENT_FD_NAME, PARENT_FL_NAME};
 use crate::storage::vault_utl::is_vault_exisits;
 use argon2::password_hash::rand_core::{CryptoRng, OsRng, RngCore};
 use chacha20poly1305::{AeadCore, ChaCha20Poly1305};
@@ -44,7 +44,7 @@ impl Vault {
         let home = dirs_next::home_dir().ok_or(HomeDirErr::InvalidHomeDir)?;
         let hash_key = format!("{}{}", ".", hex::encode(key));
         let root_file = PathBuf::from(&home)
-            .join(ROOT_FDNAME)
+            .join(PARENT_FD_NAME)
             .join(hash_key)
             .join(VAULT);
         let mut file = OpenOptions::new()

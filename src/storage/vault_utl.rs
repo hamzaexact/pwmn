@@ -2,7 +2,7 @@ use rand::rngs::adapter::ReseedingRng;
 
 // use crate::encryption::kdf;
 use super::super::encryption::kdf;
-use super::init::{FNAME, ROOT_FDNAME};
+use super::init::{PARENT_FD_NAME, PARENT_FL_NAME};
 use crate::encryption::kdf::derive_key;
 use crate::error::{self, CreateErr};
 use std::fmt::format;
@@ -18,7 +18,7 @@ use std::{
 
 pub fn is_vault_exisits() -> Result<(), Box<dyn std::error::Error>> {
     let home = dirs_next::home_dir().ok_or(error::HomeDirErr::InvalidHomeDir)?;
-    let root_folder = home.join(ROOT_FDNAME);
+    let root_folder = home.join(PARENT_FD_NAME);
     if !(root_folder.try_exists()?) {
         return Err(Box::new(CreateErr::VaultNotExists));
     }
@@ -29,7 +29,7 @@ pub fn is_child_vault_f_exists() -> Result<(), Box<dyn std::error::Error>> {
     // if the root_folder exists but the child vault file is missed somehow
     //
     let root_folder = get_root_file()?;
-    if !(root_folder.join(FNAME).try_exists()?) {
+    if !(root_folder.join(PARENT_FL_NAME).try_exists()?) {
         return Err(Box::new(CreateErr::DestroyedVaultErr));
     }
 
@@ -40,7 +40,7 @@ pub fn get_root_file() -> Result<PathBuf, Box<dyn std::error::Error>> {
     let home = dirs_next::home_dir()
         .ok_or(error::HomeDirErr::InvalidHomeDir)
         .map_err(|e| CreateErr::DestroyedVaultErr)?;
-    Ok(PathBuf::from(&home).join(ROOT_FDNAME))
+    Ok(PathBuf::from(&home).join(PARENT_FD_NAME))
 }
 
 pub fn get_salt() -> Result<[u8; 16], Box<dyn std::error::Error>> {
@@ -48,7 +48,7 @@ pub fn get_salt() -> Result<[u8; 16], Box<dyn std::error::Error>> {
     let mut root_vault_f = OpenOptions::new()
         .write(true)
         .read(true)
-        .open(root_folder.join(FNAME))?;
+        .open(root_folder.join(PARENT_FL_NAME))?;
     root_vault_f.seek(SeekFrom::Start((6)))?;
     let mut salt = [0u8; 16];
     root_vault_f.read_exact(&mut salt)?;
@@ -63,7 +63,7 @@ pub fn add_to_root_vault(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let mut root_vault_f = OpenOptions::new()
         .read(true)
         .write(true)
-        .open(root_folder.join(FNAME))?;
+        .open(root_folder.join(PARENT_FL_NAME))?;
     root_vault_f.seek(SeekFrom::Start(22))?;
     let mut n_entries_buffer = [0u8; 2];
     root_vault_f.read_exact(&mut n_entries_buffer)?;

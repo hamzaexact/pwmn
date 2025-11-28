@@ -1,7 +1,7 @@
 use crate::encryption::kdf;
 use crate::error::{self, CreateErr, SessionErr};
 use crate::session::SessionConn;
-use crate::storage::init::{FNAME, ROOT_FDNAME};
+use crate::storage::init::{PARENT_FD_NAME, PARENT_FL_NAME};
 use crate::storage::{self, vault_utl};
 use crate::{encryption::kdf::derive_key, storage::parentvault::ParentVault};
 use bincode;
@@ -104,7 +104,7 @@ impl CreateRegExec {
         let mut vault_f = OpenOptions::new()
             .read(true)
             .write(true)
-            .open(root_folder.join(FNAME))?;
+            .open(root_folder.join(PARENT_FL_NAME))?;
         vault_f.seek(SeekFrom::Start((22)));
         let mut n_entries_buffer = [0u8; 2];
         vault_f.read_exact(&mut n_entries_buffer);
@@ -125,7 +125,7 @@ impl CreateRegExec {
     pub fn create_unique_reg_f(key: [u8; 32]) -> Result<(), Box<dyn std::error::Error>> {
         let hash_key = format!(".{}", hex::encode(key));
         let home = dirs_next::home_dir().ok_or(error::HomeDirErr::InvalidHomeDir)?;
-        let curr_reg_folder = home.join(ROOT_FDNAME).join(hash_key);
+        let curr_reg_folder = home.join(PARENT_FD_NAME).join(hash_key);
         mksafe_dir(curr_reg_folder)?;
         Ok(())
     }

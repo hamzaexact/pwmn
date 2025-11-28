@@ -10,7 +10,7 @@ use crate::{
     session::SessionConn,
     storage::{
         self,
-        init::FNAME,
+        init::PARENT_FL_NAME,
         vault_utl::{get_root_file, get_salt},
     },
 };
@@ -66,7 +66,7 @@ impl VaultConnection {
         let parent_file_p = get_root_file()?;
         let mut root_vault = OpenOptions::new()
             .read(true)
-            .open(parent_file_p.join(FNAME))?;
+            .open(parent_file_p.join(PARENT_FL_NAME))?;
 
         // The Vault is composed of 4 fields.
         // [M 4 bytes] [V 2 bytes] [S 16 Bytes] [N 2 bytes]
