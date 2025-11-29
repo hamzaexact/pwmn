@@ -1,3 +1,4 @@
+use crate::encryption::enc_utl::KdfMode;
 use crate::error::VaultValidationErr;
 use anyhow::ensure;
 use rand::rngs::adapter::ReseedingRng;
@@ -91,7 +92,7 @@ pub fn add_to_root_vault(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let n_of_entries = u16::from_le_bytes(n_entries_buffer);
     let offset = n_of_entries * 32;
     root_vault_f.seek(SeekFrom::Start(((24 + offset) as u64)))?;
-    let new_register_key = derive_key(name.as_str(), &salt);
+    let new_register_key = derive_key(name.as_str(), &salt, KdfMode::EncrM);
     root_vault_f.write_all(&new_register_key)?;
     root_vault_f.seek(SeekFrom::Start((22)))?;
     root_vault_f.write_all(&((n_of_entries + 1) as u16).to_le_bytes())?;

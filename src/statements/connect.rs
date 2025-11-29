@@ -6,7 +6,7 @@ use std::{
 
 use super::create;
 use crate::{
-    encryption::kdf::derive_key,
+    encryption::{enc_utl::KdfMode, kdf::derive_key},
     error,
     session::SessionConn,
     storage::{
@@ -75,7 +75,7 @@ impl VaultConnection {
         // the path is required to decrypt the ciphertext later.
         let child_p = VaultConnection::seek_the_request_vault(reg_name, in_key)?;
 
-        // We validate the child file path as well to prevent 
+        // We validate the child file path as well to prevent
         // reading unknown or unmatched file types.
         storage::vault_utl::validate_f_header(child_p)?;
 
@@ -96,7 +96,7 @@ impl VaultConnection {
         root_vault.seek(SeekFrom::Start((22)))?;
         let mut n_of_regs_buffer = [0u8; 2];
         root_vault.read_exact(&mut n_of_regs_buffer)?;
-        let in_key = derive_key(&lower_reg_name, &get_salt()?);
+        let in_key = derive_key(&lower_reg_name, &get_salt()?, KdfMode::EncrM);
 
         // Fortunately, if there are no keys, the program won't crash
         // thanks to the first two functions that ensure the existence

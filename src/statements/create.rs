@@ -1,3 +1,4 @@
+use crate::encryption::enc_utl::KdfMode;
 use crate::encryption::kdf;
 use crate::error::{self, CreateErr, SessionErr};
 use crate::session::SessionConn;
@@ -30,12 +31,11 @@ impl CreateRegExec {
         // Store the key to avoid re-computation in subsequent function calls.
         let key = CreateRegExec::register_exists(name)?;
 
-
         // TODO()! -> need to modify this function for the given situation.
-        // We create a unique folder and add it to the parent vault, 
-        // which may cause other functions to fail. 
-        // This would result in writing a garbage key 
-        // that wastes space and prevents creating another 
+        // We create a unique folder and add it to the parent vault,
+        // which may cause other functions to fail.
+        // This would result in writing a garbage key
+        // that wastes space and prevents creating another
         // register with the same name.
 
         CreateRegExec::create_unique_reg_f(key)?;
@@ -93,7 +93,7 @@ impl CreateRegExec {
             }));
         }
         let salt = childvault::Vault::get_child_salt(p)?;
-        let key = derive_key(&password, &salt);
+        let key = derive_key(&password, &salt, KdfMode::EncrM);
         // Zeroize the password from memory.
         Zeroize::zeroize(&mut password);
 
@@ -117,7 +117,7 @@ impl CreateRegExec {
         let mut n_entries_buffer = [0u8; 2];
         vault_f.read_exact(&mut n_entries_buffer);
         let n_entries = u16::from_le_bytes(n_entries_buffer);
-        let out_key = kdf::derive_key(name.as_str(), &vault_utl::get_salt()?);
+        let out_key = kdf::derive_key(name.as_str(), &vault_utl::get_salt()?, KdfMode::EncrM);
         if n_entries == 0 {
             return Ok(out_key);
         }
@@ -139,6 +139,9 @@ impl CreateRegExec {
     }
     pub fn write_encrypted_data(p: &PathBuf, ciphertext: Vec<u8>) -> Result<(), DynError> {
         let mut r_vault = OpenOptions::new().write(true).read(true).open(p)?;
+        // [4] [2] [16] [12]
+        //  4---6---22---34
+        // Position 34 marks the beginning of the empty dataset.
         r_vault.seek(SeekFrom::Start((34)));
         r_vault.write_all(&ciphertext)?;
         // Flushing data slowly to disk but because we're during a critical moment,

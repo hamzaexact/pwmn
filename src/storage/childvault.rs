@@ -29,7 +29,6 @@ pub struct Vault {
 impl Vault {
     pub fn new(key: [u8; 32]) -> Result<PathBuf, DynamicError> {
         let nonce_array = ChaCha20Poly1305::generate_nonce(&mut OsRng);
-        println!("{:?}",[0x50, 0x57, 0x4D, 0x4E]);
         let mut f = Self {
             magic: [0x50, 0x57, 0x4D, 0x4E],
             version: 1,
