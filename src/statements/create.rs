@@ -44,11 +44,12 @@ impl CreateRegExec {
 
         storage::vault_utl::add_to_root_vault(name)?;
 
-        let data_as_bytes = CreateRegExec::insert_encrypted_empty_data(&path, name)?;
+        let (data_as_bytes, pwd_key) = CreateRegExec::insert_encrypted_empty_data(&path, name)?;
 
         let nonce = Vault::get_child_nonce(&path)?;
 
-        let ciphertext = aead::encrypt(key, nonce, data_as_bytes)?;
+        println!("{:?}", &pwd_key[0..10]);
+        let ciphertext = aead::encrypt(pwd_key, nonce, data_as_bytes)?;
 
         CreateRegExec::write_encrypted_data(&path, ciphertext)?;
 
@@ -79,7 +80,7 @@ impl CreateRegExec {
     pub fn insert_encrypted_empty_data(
         p: &PathBuf,
         name: &str,
-    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    ) -> Result<(Vec<u8>, [u8; 32]), Box<dyn std::error::Error>> {
         let mut file = OpenOptions::new().read(true).write(true).open(&p)?;
         // To p, because we need to move it later to fetch the private vault salt.
         let mut password = rpassword::prompt_password(
@@ -94,6 +95,7 @@ impl CreateRegExec {
         }
         let salt = childvault::Vault::get_child_salt(p)?;
         let key = derive_key(&password, &salt, KdfMode::EncrM);
+
         // Zeroize the password from memory.
         Zeroize::zeroize(&mut password);
 
@@ -103,7 +105,7 @@ impl CreateRegExec {
         // Convert the register into bytes and prepare it for encryption.
         let reg_to_bytes: Vec<u8> = bincode::encode_to_vec(reg, bincode::config::standard())?;
 
-        Ok(reg_to_bytes)
+        Ok((reg_to_bytes, key))
     }
 
     pub fn register_exists(name: &str) -> Result<[u8; 32], Box<dyn std::error::Error>> {
