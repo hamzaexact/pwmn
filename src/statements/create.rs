@@ -4,7 +4,7 @@ use crate::error::{self, CreateErr, SessionErr};
 use crate::session::SessionConn;
 use crate::storage::init::{PARENT_FD_NAME, PARENT_FL_NAME};
 use crate::storage::{self, vault_utl};
-use crate::{encryption::kdf::derive_key, storage::parentvault::ParentVault};
+use crate::{encryption::kdf::derive_slow_key, encryption::kdf::derive_fast_key, storage::parentvault::ParentVault};
 use bincode;
 use rpassword;
 use serde::{Deserialize, Serialize};
@@ -48,7 +48,6 @@ impl CreateRegExec {
 
         let nonce = Vault::get_child_nonce(&path)?;
 
-        println!("{:?}", &pwd_key[0..10]);
         let ciphertext = aead::encrypt(pwd_key, nonce, data_as_bytes)?;
 
         CreateRegExec::write_encrypted_data(&path, ciphertext)?;
@@ -94,7 +93,7 @@ impl CreateRegExec {
             }));
         }
         let salt = childvault::Vault::get_child_salt(p)?;
-        let key = derive_key(&password, &salt, KdfMode::EncrM);
+        let key = derive_slow_key(&password, &salt);
 
         // Zeroize the password from memory.
         Zeroize::zeroize(&mut password);
@@ -119,7 +118,7 @@ impl CreateRegExec {
         let mut n_entries_buffer = [0u8; 2];
         vault_f.read_exact(&mut n_entries_buffer);
         let n_entries = u16::from_le_bytes(n_entries_buffer);
-        let out_key = kdf::derive_key(name.as_str(), &vault_utl::get_salt()?, KdfMode::EncrM);
+        let out_key = kdf::derive_fast_key(name.as_str(), &vault_utl::get_salt()?);
         if n_entries == 0 {
             return Ok(out_key);
         }

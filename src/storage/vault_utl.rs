@@ -5,7 +5,7 @@ use rand::rngs::adapter::ReseedingRng;
 // use crate::encryption::kdf;
 use super::super::encryption::kdf;
 use super::init::{PARENT_FD_NAME, PARENT_FL_NAME};
-use crate::encryption::kdf::derive_key;
+use crate::encryption::kdf::{derive_fast_key, derive_slow_key};
 use crate::error::{self, CreateErr};
 use crate::storage::childvault::VAULT_N;
 use std::fmt::format;
@@ -21,7 +21,7 @@ use std::{
 
 type DynamicErr = Box<dyn std::error::Error>;
 
-pub fn validate_f_header(p: PathBuf) -> Result<(), DynamicErr> {
+pub fn validate_f_header(p: &PathBuf) -> Result<(), DynamicErr> {
     let mut t_file = OpenOptions::new().read(true).open(p)?;
     t_file.seek(SeekFrom::Start(0));
     let mut t_file_magic = [0u8; 4];
@@ -92,7 +92,7 @@ pub fn add_to_root_vault(name: &str) -> Result<(), Box<dyn std::error::Error>> {
     let n_of_entries = u16::from_le_bytes(n_entries_buffer);
     let offset = n_of_entries * 32;
     root_vault_f.seek(SeekFrom::Start(((24 + offset) as u64)))?;
-    let new_register_key = derive_key(name.as_str(), &salt, KdfMode::EncrM);
+    let new_register_key = derive_fast_key(name.as_str(), &salt);
     root_vault_f.write_all(&new_register_key)?;
     root_vault_f.seek(SeekFrom::Start((22)))?;
     root_vault_f.write_all(&((n_of_entries + 1) as u16).to_le_bytes())?;

@@ -6,13 +6,14 @@ use std::{
 
 use super::create;
 use crate::{
-    encryption::{aead::decrypt, enc_utl::KdfMode, kdf::derive_key},
+    encryption::{aead::decrypt, enc_utl::KdfMode, kdf::derive_slow_key, kdf::derive_fast_key},
     error,
     session::SessionConn,
     storage::{
         self,
         childvault::{self, VAULT_N},
         init::PARENT_FL_NAME,
+        types::Register,
         vault_utl::{get_root_file, get_salt},
     },
 };
@@ -79,7 +80,10 @@ impl VaultConnection {
         // reading unknown or unmatched file types.
         storage::vault_utl::validate_f_header(&child_p)?;
 
-        VaultConnection::connect(&child_p);
+        let bytes_data = VaultConnection::connect(&child_p)?;
+
+        let k = VaultConnection::load_register(bytes_data)?;
+        dbg!(k);
 
         Ok(())
     }
@@ -98,7 +102,7 @@ impl VaultConnection {
         root_vault.seek(SeekFrom::Start((22)))?;
         let mut n_of_regs_buffer = [0u8; 2];
         root_vault.read_exact(&mut n_of_regs_buffer)?;
-        let in_key = derive_key(&lower_reg_name, &get_salt()?, KdfMode::EncrM);
+        let in_key = derive_fast_key(&lower_reg_name, &get_salt()?);
 
         // Fortunately, if there are no keys, the program won't crash
         // thanks to the first two functions that ensure the existence
@@ -129,6 +133,8 @@ impl VaultConnection {
         Ok(req_p)
     }
 
+    // Bug Fix: the key that was used as an input to ChaChaPoly was from the register name not the actual password, which lead to not accepting the password of the vault
+
     pub fn connect(p: &PathBuf) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let mut vault = OpenOptions::new().read(true).write(true).open(p)?;
         let mut salt = childvault::Vault::get_child_salt(&p)?;
@@ -137,8 +143,18 @@ impl VaultConnection {
         vault.seek(SeekFrom::Start(22 + 12))?;
         vault.read_to_end(&mut encrypted);
         let password = rpassword::prompt_password("Enter the vault's password: ")?;
-        let in_key = derive_key(&password, &salt, KdfMode::EncrM);
+        let in_key = derive_slow_key(&password, &salt);
         let _e_data = decrypt(in_key, nonce, encrypted)?;
         Ok(_e_data)
+    }
+
+    pub fn load_register(bytes_data: Vec<u8>) -> Result<Register, Box<dyn std::error::Error>> {
+        let decoded: Register = {
+            let config = bincode::config::standard();
+            let (value, len): (Register, usize) = bincode::decode_from_slice(&bytes_data, config)?;
+            value
+        };
+
+        Ok(decoded)
     }
 }
