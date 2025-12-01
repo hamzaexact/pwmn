@@ -6,12 +6,12 @@ use std::{
 
 use super::create;
 use crate::{
-    encryption::{enc_utl::KdfMode, kdf::derive_key},
+    encryption::{aead::decrypt, enc_utl::KdfMode, kdf::derive_key},
     error,
     session::SessionConn,
     storage::{
         self,
-        childvault::VAULT_N,
+        childvault::{self, VAULT_N},
         init::PARENT_FL_NAME,
         vault_utl::{get_root_file, get_salt},
     },
@@ -52,7 +52,7 @@ impl VaultConnection {
         // Since the parent folder and its files both exist,
         // we need to validate the file against the MAGIC and the VERSION.
         //
-        storage::vault_utl::validate_f_header(parent_p)?;
+        storage::vault_utl::validate_f_header(&parent_p)?;
         // Using a create validation function here would be missing,
         // the first one (which belongs to Create)
         // returns AlreadyExistsErr with a key if it's successful,
@@ -77,7 +77,9 @@ impl VaultConnection {
 
         // We validate the child file path as well to prevent
         // reading unknown or unmatched file types.
-        storage::vault_utl::validate_f_header(child_p)?;
+        storage::vault_utl::validate_f_header(&child_p)?;
+
+        VaultConnection::connect(&child_p);
 
         Ok(())
     }
@@ -125,5 +127,18 @@ impl VaultConnection {
         }
         // deallocated the key later.
         Ok(req_p)
+    }
+
+    pub fn connect(p: &PathBuf) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+        let mut vault = OpenOptions::new().read(true).write(true).open(p)?;
+        let mut salt = childvault::Vault::get_child_salt(&p)?;
+        let mut nonce = childvault::Vault::get_child_nonce(&p)?;
+        let mut encrypted = Vec::new();
+        vault.seek(SeekFrom::Start(22 + 12))?;
+        vault.read_to_end(&mut encrypted);
+        let password = rpassword::prompt_password("Enter the vault's password: ")?;
+        let in_key = derive_key(&password, &salt, KdfMode::EncrM);
+        let _e_data = decrypt(in_key, nonce, encrypted)?;
+        Ok(_e_data)
     }
 }
