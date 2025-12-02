@@ -21,6 +21,7 @@ pub fn token_name(tokind: &TokenKind) -> &str {
         TokenKind::Audit => "Audit",
         TokenKind::Connect => "Connect",
         TokenKind::Create => "Create",
+        TokenKind::Conn => "Conn",
         TokenKind::Contains => "Contains",
         TokenKind::Delete => "Delete",
         TokenKind::Drop => "Drop",

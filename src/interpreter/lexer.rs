@@ -35,6 +35,7 @@ pub enum TokenKind {
     Connect,
     Create,
     Contains,
+    Conn, // shorthand for connection
     Delete,
     Drop,
     Describe,
@@ -275,6 +276,7 @@ impl<'a> Lexer<'a> {
                         "CONNECT" => TokenKind::Connect,
                         "CREATE" => TokenKind::Create,
                         "CONTAINS" => TokenKind::Contains,
+                        "CONN" => TokenKind::Connect,
                         "DROP" => TokenKind::Drop,
                         "DELETE" => TokenKind::Delete,
                         "DESCRIBE" => TokenKind::Describe,
