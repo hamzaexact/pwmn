@@ -82,8 +82,9 @@ impl VaultConnection {
 
         let bytes_data = VaultConnection::connect(&child_p)?;
 
-        let k = VaultConnection::load_register(bytes_data)?;
-        dbg!(k);
+        let reg = VaultConnection::load_register(bytes_data)?;
+
+        session.connect_to(reg);
 
         Ok(())
     }
