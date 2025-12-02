@@ -1,7 +1,9 @@
 use crate::error::ParserErr;
+use crate::interpreter::ast::{self, Expr::Statment as ExprStmt, Stmt};
 use crate::interpreter::lexer::{LexResult, Span, Token, TokenKind};
-use crate::interpreter::{ast, lexer};
+use crate::interpreter::{ast::DropTree, lexer};
 use std::error::Error;
+use std::fmt::Display;
 //
 pub struct Parser<'t> {
     query: &'t str,
@@ -24,6 +26,13 @@ impl<'t> Parser<'t> {
             }
             ast::Expr::Statment(ast::Stmt::Connect { reg_name }) => {
                 Ok(ast::Stmt::Connect { reg_name: reg_name })
+            }
+
+            ast::Expr::Statment(ast::Stmt::DropTree(DropTree::Reg(s))) => {
+                Ok(ast::Stmt::DropTree(DropTree::Reg((s))))
+            }
+            ast::Expr::Statment(ast::Stmt::DropTree(DropTree::Reg(s))) => {
+                Ok(ast::Stmt::DropTree(DropTree::Ent((s))))
             }
             _ => todo!(),
         }
@@ -186,6 +195,71 @@ impl<'t> Parser<'t> {
                                 return Err(ParserErr::UnexpectedEndOfExpression {
                                     input: self.query.to_string(),
                                     tokind: TokenKind::Identifier(empty_string),
+                                    span: Span {
+                                        start: self.query.len(),
+                                        end: self.query.len() + 1,
+                                    },
+                                });
+                            }
+                        }
+                    }
+
+                    TokenKind::Drop => {
+                        self.consume(TokenKind::Drop)?;
+                        match self.peek_token() {
+                            Some((token, kind)) => {
+                                if kind == TokenKind::Register {
+                                    self.consume(TokenKind::Register)?;
+                                    dbg!(&self.tokens);
+                                    match self.peek_token() {
+                                        Some((t, k)) => match k {
+                                            TokenKind::Identifier(reg_name) => {
+                                                return Ok(ast::Expr::Statment(
+                                                    ast::Stmt::DropTree(DropTree::Reg(reg_name)),
+                                                ));
+                                            }
+                                            other => {
+                                                return Err(ParserErr::ExpectedIdentifier {
+                                                    input: self.query.to_string(),
+                                                    givenkind: other,
+                                                    span: t.span,
+                                                });
+                                            }
+                                        },
+
+                                        None => {
+                                            return Err(ParserErr::UnexpectedEndOfExpression {
+                                                input: self.query.to_string(),
+                                                tokind: TokenKind::EmptyIdentifer,
+                                                span: Span {
+                                                    start: self.query.len(),
+                                                    end: self.query.len() + 1,
+                                                },
+                                            });
+                                        }
+                                    }
+                                }
+
+                                if kind == TokenKind::Entry {
+                                    self.consume(TokenKind::Entry)?;
+                                    match self.peek_token() {
+                                        Some((t, v)) => {
+                                            if let TokenKind::Identifier(s) = v {
+                                                return Ok(ExprStmt(Stmt::DropTree(
+                                                    DropTree::Ent(s),
+                                                )));
+                                            }
+                                        }
+
+                                        None => unreachable!(),
+                                    }
+                                }
+                            }
+
+                            None => {
+                                return Err(ParserErr::UnexpectedEndOfExpression {
+                                    input: self.query.to_string(),
+                                    tokind: TokenKind::EmptyIdentifer,
                                     span: Span {
                                         start: self.query.len(),
                                         end: self.query.len() + 1,
