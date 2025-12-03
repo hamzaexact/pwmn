@@ -1,7 +1,7 @@
 use crate::error::HomeDirErr;
 use crate::{
     error,
-    storage::{init::PARENT_FD_NAME, types::Register},
+    storage::{init::ROOT_REG, types::Register},
 };
 use bincode::error as bin_err;
 use std::{
@@ -22,7 +22,7 @@ impl SessionConn {
         Ok(Self {
             current_connected_register: None,
             // No connection yet! Wrap the ROOT folder until we establish a connection.
-            base_path: home_dir.join(PARENT_FD_NAME),
+            base_path: home_dir.join(ROOT_REG),
         })
     }
 

@@ -59,5 +59,4 @@ impl Vault {
         //
         Ok(root_file)
     }
-
 }

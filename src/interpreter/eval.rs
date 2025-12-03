@@ -11,9 +11,9 @@ impl eval for Stmt {
         match self {
             Self::Init => init::init()?,
             Self::Create { reg_name } => create::CreateRegExec::execute(&reg_name, session)?,
-            Self::Connect { reg_name } => connect::VaultConnection::execute(&reg_name, session)?,
-            Self::DropTree(DropTree::Reg(s)) => drop::Drop::execute(DropTree::Reg(s))?,
-            Self::DropTree(DropTree::Ent(s)) => drop::Drop::execute(DropTree::Ent(s))?,
+            // Self::Connect { reg_name } => connect::VaultConnection::execute(&reg_name, session)?,
+            // Self::DropTree(DropTree::Reg(s)) => drop::Drop::execute(DropTree::Reg(s), &session)?,
+            // Self::DropTree(DropTree::Ent(s)) => drop::Drop::execute(DropTree::Ent(s), &session)?,
             other => {
                 println!("TODO -> {:?}", other);
             }
