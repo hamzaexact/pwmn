@@ -24,7 +24,7 @@ pub enum ParserErr {
     },
     TypeMismatch {
         input: String,
-        expectedkind: TokenKind,
+        expectedkind: Vec<TokenKind>,
         givenkind: TokenKind,
         span: Span,
     },
@@ -200,9 +200,32 @@ impl<'a> Display for ParserErr {
                 givenkind,
                 span,
             } => {
+                let expected = match expectedkind.len() {
+                    0 => String::new(),
+
+                    1 => format!("'{}'", token_name(&expectedkind[0])),
+
+                    2 => format!(
+                        "'{}' or '{}'",
+                        token_name(&expectedkind[0]),
+                        token_name(&expectedkind[1])
+                    ),
+
+                    _ => {
+                        let last = format!("or '{}'", token_name(&*expectedkind.last().unwrap()));
+
+                        let mut parts: Vec<String> = expectedkind[..expectedkind.len() - 1]
+                            .iter()
+                            .map(|t| format!("'{}'", token_name(&*t)))
+                            .collect();
+
+                        parts.push(last);
+                        parts.join(", ")
+                    }
+                };
                 let err_title = format!(
                     "Expected Token type {}, got {}",
-                    token_name(expectedkind),
+                    expected,
                     token_name(givenkind)
                 );
                 write!(
