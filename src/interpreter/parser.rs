@@ -1,5 +1,5 @@
 use crate::error::ParserErr;
-use crate::interpreter::ast::{self, Expr::Statment as ExprStmt, Stmt, Inner};
+use crate::interpreter::ast::{self, Expr::Statment as ExprStmt, Inner, Stmt};
 use crate::interpreter::lexer::{LexResult, Span, Token, TokenKind};
 use crate::interpreter::{ast::DropTree, lexer};
 use std::error::Error;
