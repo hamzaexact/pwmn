@@ -1,6 +1,7 @@
 use crate::interpreter::token_name;
 use crate::interpreter::{Span, lexer::TokenKind};
 use std::any::type_name;
+use std::error;
 use std::fmt::{Debug, Display, Formatter, format};
 use std::fs::write;
 use thiserror::Error;
@@ -37,7 +38,7 @@ pub enum ParserErr {
 
 #[derive(Debug)]
 pub enum InitErr {
-    VaultAlreadyExists,
+    RootVaultAlreadyExists,
 }
 
 #[derive(Debug)]
@@ -234,8 +235,8 @@ impl<'a> Display for ParserErr {
 impl std::fmt::Display for InitErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::VaultAlreadyExists => {
-                let err_title = "The Root Vault already exists, and it cannot be overided, TODO";
+            Self::RootVaultAlreadyExists => {
+                let err_title = "The Root Vault already exists, and it cannot be overridden. You can CREATE, CONNECT, or DROP a Vault";
                 write!(f, "{}", err_title)
             }
         }
@@ -248,7 +249,7 @@ impl std::fmt::Display for CreateErr {
             Self::VaultNotExists => {
                 write!(
                     f,
-                    "There is no RootVault yet, run INIT first to initialize the RootVAULT"
+                    "There is no Root Vault yet, run INIT first to initialize the RootVAULT"
                 )
             }
 
@@ -304,7 +305,7 @@ impl std::fmt::Display for SessionErr {
             }
 
             Self::AnotherSessionIsRunningErr => {
-                let err_title = "To CREATE or CONNECT to a register, you must first disconnect the currently connected register";
+                let err_title = "To CREATE, DROP or  CONNECT to a register, you must first disconnect the currently connected register";
                 write!(f, "{err_title}")
             }
 
@@ -369,6 +370,19 @@ pub enum VaultValidationErr {
     MismatchedFileHeader,
 }
 
+#[derive(Debug, Error)]
+pub enum DropErr {
+    #[error("The requested vault '{}' does not exist.", vault)]
+    VaultNotExists { vault: String },
+}
+
+#[derive(Debug, Error)]
+pub enum FileReqErr {
+    #[error(
+        "Unable to determine if the path exists. \nThis may be due to missing permissions, a symbolic link loop, an invalid or unreachable file system, or another I/O error."
+    )]
+    UnexpectedIOError,
+}
 fn err_formatter(
     err_title: &str,
     input: &str,
