@@ -323,7 +323,7 @@ impl std::fmt::Display for SessionErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::SessionNotConnected => {
-                let err_title = "Not connected to any register. Use CONNECT <name>";
+                let err_title = "Sorry, You are not connected to any register. Use CONNECT <name>";
                 write!(f, "{err_title}")
             }
 
@@ -414,6 +414,7 @@ pub enum AuthErr {
     )]
     AuthFileNotFound,
 }
+
 fn err_formatter(
     err_title: &str,
     input: &str,
