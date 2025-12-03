@@ -11,7 +11,7 @@ use bincode;
 use rpassword;
 use serde::{Deserialize, Serialize};
 use std::env::{self, SplitPaths};
-use std::fs::{OpenOptions, create_dir_all as mksafe_dir};
+use std::fs::{OpenOptions, create_dir_all as mksafe_dir, remove_dir_all};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::PathBuf;
 use storage::types::Register;
@@ -23,8 +23,8 @@ use crate::storage::vault::{self, Vault};
 use crate::storage::vaultmanager::VaultManager;
 
 pub enum WriteMode {
-    Vault, 
-    Auth
+    Vault,
+    Auth,
 }
 
 impl CreateRegExec {
@@ -56,7 +56,11 @@ impl CreateRegExec {
 
         let ciphertext = aead::encrypt(pwd_key, nonce, data_as_bytes)?;
 
-        CreateRegExec::write_encrypted_data(vault.pathfP.as_ref().unwrap(), &ciphertext, WriteMode::Vault)?;
+        CreateRegExec::write_encrypted_data(
+            vault.pathfP.as_ref().unwrap(),
+            &ciphertext,
+            WriteMode::Vault,
+        )?;
 
         Auth::create_at(&vault.p)?;
 
@@ -122,8 +126,12 @@ impl CreateRegExec {
         Ok((reg_to_bytes, key))
     }
 
-    pub fn write_encrypted_data(p: &PathBuf, ciphertext: &Vec<u8>, write_mode: WriteMode) -> Result<(), DynError> {
-        let pos:u64;
+    pub fn write_encrypted_data(
+        p: &PathBuf,
+        ciphertext: &Vec<u8>,
+        write_mode: WriteMode,
+    ) -> Result<(), DynError> {
+        let pos: u64;
         match write_mode {
             WriteMode::Vault => {
                 pos = 34;
