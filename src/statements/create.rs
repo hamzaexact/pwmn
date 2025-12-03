@@ -2,12 +2,10 @@ use crate::encryption::enc_utl::KdfMode;
 use crate::encryption::kdf;
 use crate::error::{self, CreateErr, SessionErr};
 use crate::session::SessionConn;
-use crate::storage::init::{PARENT_FD_NAME, PARENT_FL_NAME};
-use crate::storage::{self, vault_utl};
-use crate::{
-    encryption::kdf::derive_fast_key, encryption::kdf::derive_slow_key,
-    storage::parentvault::ParentVault,
-};
+use crate::storage::init::ROOT_REG;
+use crate::storage::vaultmod::VaultMod;
+use crate::storage::{self, vaultmod};
+use crate::{encryption::kdf::derive_fast_key, encryption::kdf::derive_slow_key};
 use bincode;
 use rpassword;
 use serde::{Deserialize, Serialize};
@@ -20,19 +18,22 @@ type DynError = Box<dyn std::error::Error>;
 use crate::encryption::aead;
 use zeroize::Zeroize;
 pub struct CreateRegExec;
-use crate::storage::childvault::{self, Vault};
+use crate::storage::vault::{self, Vault};
+use crate::storage::vaultmanager::VaultManager;
 impl CreateRegExec {
-    pub fn execute(name: &str, session: &SessionConn) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn execute(
+        reg_name: &str,
+        session: &SessionConn,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // Validate the input before proceeding.
-        CreateRegExec::pre_validation(name, session)?;
+        CreateRegExec::pre_validation(reg_name, session)?;
 
         // "Validate if the root vault exists. If not, propagate a VaultNotExists error."
-        storage::vault_utl::is_parent_vault_exisits()?;
+        let vault_manager = VaultManager::load()?;
 
-        storage::vault_utl::is_parent_f_exists()?;
+        let mut child = vault_manager.create_child(reg_name)?;
 
-        // Store the key to avoid re-computation in subsequent function calls.
-        let key = CreateRegExec::register_exists(name)?;
+        let mut vault = child.allocate()?;
 
         // TODO()! -> need to modify this function for the given situation.
         // We create a unique folder and add it to the parent vault,
@@ -41,23 +42,18 @@ impl CreateRegExec {
         // that wastes space and prevents creating another
         // register with the same name.
 
-        CreateRegExec::create_unique_reg_f(key)?;
+        let (data_as_bytes, pwd_key) =
+            CreateRegExec::insert_encrypted_empty_data(&mut vault, reg_name)?;
 
-        let path = childvault::Vault::new(key)?;
-
-        storage::vault_utl::add_to_root_vault(name)?;
-
-        let (data_as_bytes, pwd_key) = CreateRegExec::insert_encrypted_empty_data(&path, name)?;
-
-        let nonce = Vault::get_child_nonce(&path)?;
+        let nonce = vault.load_nonce()?;
 
         let ciphertext = aead::encrypt(pwd_key, nonce, data_as_bytes)?;
 
-        CreateRegExec::write_encrypted_data(&path, ciphertext)?;
+        CreateRegExec::write_encrypted_data(vault.pathfP.as_ref().unwrap(), ciphertext)?;
 
         println!(
-            "\nVault Created Successfully!\nUse CONNECT <{}> to connect to your register",
-            name
+            "\nVault Created Successfully!\nUse CONNECT '{}' to connect to your register",
+            reg_name
         );
         Ok(())
     }
@@ -80,10 +76,13 @@ impl CreateRegExec {
         Ok(())
     }
     pub fn insert_encrypted_empty_data(
-        p: &PathBuf,
+        vault: &mut VaultMod,
         name: &str,
     ) -> Result<(Vec<u8>, [u8; 32]), Box<dyn std::error::Error>> {
-        let mut file = OpenOptions::new().read(true).write(true).open(&p)?;
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(vault.pathfP.as_ref().unwrap())?;
         // To p, because we need to move it later to fetch the private vault salt.
         let mut password = rpassword::prompt_password(
             "\nA password is required to create the vault.\nPlease enter a password: ",
@@ -95,7 +94,7 @@ impl CreateRegExec {
                 target_len: 8,
             }));
         }
-        let salt = childvault::Vault::get_child_salt(p)?;
+        let salt = vault.load_salt()?;
         let key = derive_slow_key(&password, &salt);
 
         // Zeroize the password from memory.
@@ -110,37 +109,6 @@ impl CreateRegExec {
         Ok((reg_to_bytes, key))
     }
 
-    pub fn register_exists(name: &str) -> Result<[u8; 32], Box<dyn std::error::Error>> {
-        let name = name.to_lowercase();
-        let root_folder = storage::vault_utl::get_root_file()?;
-        let mut vault_f = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .open(root_folder.join(PARENT_FL_NAME))?;
-        vault_f.seek(SeekFrom::Start((22)));
-        let mut n_entries_buffer = [0u8; 2];
-        vault_f.read_exact(&mut n_entries_buffer);
-        let n_entries = u16::from_le_bytes(n_entries_buffer);
-        let out_key = kdf::derive_fast_key(name.as_str(), &vault_utl::get_salt()?);
-        if n_entries == 0 {
-            return Ok(out_key);
-        }
-        for _ in 0..n_entries {
-            let mut current_cell_key = [0u8; 32];
-            vault_f.read_exact(&mut current_cell_key)?;
-            if out_key == current_cell_key {
-                return Err(Box::new(CreateErr::RegisterAlreadyExists));
-            }
-        }
-        Ok(out_key)
-    }
-    pub fn create_unique_reg_f(key: [u8; 32]) -> Result<(), Box<dyn std::error::Error>> {
-        let hash_key = format!(".{}", hex::encode(key));
-        let home = dirs_next::home_dir().ok_or(error::HomeDirErr::InvalidHomeDir)?;
-        let curr_reg_folder = home.join(PARENT_FD_NAME).join(hash_key);
-        mksafe_dir(curr_reg_folder)?;
-        Ok(())
-    }
     pub fn write_encrypted_data(p: &PathBuf, ciphertext: Vec<u8>) -> Result<(), DynError> {
         let mut r_vault = OpenOptions::new().write(true).read(true).open(p)?;
         // [4] [2] [16] [12]
