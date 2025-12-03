@@ -54,6 +54,7 @@ pub enum Stmt {
     Create { reg_name: String },
     Connect { reg_name: String },
     DropTree(DropTree),
+    Disconnect,
     Select { cols: Box<Expr> },
 }
 
@@ -79,6 +80,7 @@ impl Inner for Expr {
             Expr::Statment(Stmt::DropTree(DropTree::Ent(s))) => {
                 Ok(Stmt::DropTree(DropTree::Ent(s.to_owned())))
             }
+            Expr::Statment(Stmt::Disconnect) => Ok(Stmt::Disconnect),
             _ => unreachable!(),
         }
     }

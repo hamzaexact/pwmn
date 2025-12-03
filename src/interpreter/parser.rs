@@ -262,6 +262,10 @@ impl<'t> Parser<'t> {
                             }
                         }
                     }
+
+                    TokenKind::Disconnect => {
+                        return Ok(ast::Expr::Statment((ast::Stmt::Disconnect)));
+                    }
                     _ => todo!(),
                 }
             }

@@ -1,6 +1,6 @@
 use crate::interpreter::ast::{self, DropTree, Stmt};
 use crate::session::sessionConn::SessionConn;
-use crate::statements::{connect, create, drop};
+use crate::statements::{connect, create, disconnect, drop};
 use crate::storage::init;
 pub trait eval {
     fn eval(self, session: &mut SessionConn) -> Result<(), Box<dyn std::error::Error>>;
@@ -14,6 +14,9 @@ impl eval for Stmt {
             Self::Connect { reg_name } => connect::VaultConnection::execute(&reg_name, session)?,
             Self::DropTree(DropTree::Reg(s)) => drop::Drop::execute(DropTree::Reg(s), &session)?,
             Self::DropTree(DropTree::Ent(s)) => drop::Drop::execute(DropTree::Ent(s), &session)?,
+            Self::Disconnect => {
+                disconnect::Disconnect { session }.disconnect();
+            }
             other => {
                 println!("TODO -> {:?}", other);
             }
