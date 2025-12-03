@@ -1,3 +1,4 @@
+use super::vault::VAULT_N;
 use super::{init::ROOT_REG, vault::Vault};
 use crate::encryption::kdf::derive_fast_key;
 use crate::error::{self, ConnectionErr, CreateErr, DropErr, FileReqErr};
@@ -5,7 +6,6 @@ use crate::storage::vaultmod::VaultMod;
 use hex;
 use std::fs::create_dir_all as mksafe_dir;
 use std::path::PathBuf;
-use super::vault::VAULT_N;
 
 pub const SALT: [u8; 16] = [
     188, 209, 128, 213, 229, 38, 112, 152, 37, 246, 56, 123, 185, 210, 43, 26,
@@ -32,20 +32,24 @@ impl VaultManager {
     pub fn validate_register(
         &self,
         reg_name: &str,
-        to_create: bool
+        to_create: bool,
     ) -> Result<(String, PathBuf), Box<dyn std::error::Error>> {
         let child = format!(".{}", hex::encode(derive_fast_key(reg_name, &SALT)));
         let path = PathBuf::from(&self.p).join(&child);
         if path
             .try_exists()
-            .map_err(|E| FileReqErr::UnexpectedIOError)? && to_create
+            .map_err(|E| FileReqErr::UnexpectedIOError)?
+            && to_create
         {
             return Err(Box::new(CreateErr::RegisterAlreadyExists));
-        }
-
-        else if !path.try_exists().map_err(|E| FileReqErr::UnexpectedIOError)? && !to_create{
-            return Err(Box::new(DropErr::VaultNotExists { vault: reg_name.to_string()}))
-
+        } else if !path
+            .try_exists()
+            .map_err(|E| FileReqErr::UnexpectedIOError)?
+            && !to_create
+        {
+            return Err(Box::new(DropErr::VaultNotExists {
+                vault: reg_name.to_string(),
+            }));
         }
         Ok((child, path))
     }
