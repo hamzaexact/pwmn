@@ -69,10 +69,16 @@ impl Inner for Expr {
             Expr::Statment(Stmt::Create { reg_name: s }) => Ok(Stmt::Create {
                 reg_name: s.to_owned(),
             }),
-            Expr::Statment(Stmt::Connect { reg_name: s }) => Ok(Stmt::Connect { reg_name: s.to_owned() }),
+            Expr::Statment(Stmt::Connect { reg_name: s }) => Ok(Stmt::Connect {
+                reg_name: s.to_owned(),
+            }),
             Expr::Statment(Stmt::Init) => Ok(Stmt::Init),
-            Expr::Statment(Stmt::DropTree(DropTree::Reg(s))) => Ok(Stmt::DropTree(DropTree::Reg(s.to_owned()))),
-            Expr::Statment(Stmt::DropTree(DropTree::Ent(s))) => Ok(Stmt::DropTree(DropTree::Ent(s.to_owned()))),
+            Expr::Statment(Stmt::DropTree(DropTree::Reg(s))) => {
+                Ok(Stmt::DropTree(DropTree::Reg(s.to_owned())))
+            }
+            Expr::Statment(Stmt::DropTree(DropTree::Ent(s))) => {
+                Ok(Stmt::DropTree(DropTree::Ent(s.to_owned())))
+            }
             _ => unreachable!(),
         }
     }
