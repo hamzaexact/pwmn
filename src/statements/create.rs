@@ -2,6 +2,7 @@ use crate::encryption::enc_utl::KdfMode;
 use crate::encryption::kdf;
 use crate::error::{self, CreateErr, SessionErr};
 use crate::session::SessionConn;
+use crate::storage::enc_auth::Auth;
 use crate::storage::init::ROOT_REG;
 use crate::storage::vaultmod::VaultMod;
 use crate::storage::{self, vaultmod};
@@ -20,6 +21,12 @@ use zeroize::Zeroize;
 pub struct CreateRegExec;
 use crate::storage::vault::{self, Vault};
 use crate::storage::vaultmanager::VaultManager;
+
+pub enum WriteMode {
+    Vault, 
+    Auth
+}
+
 impl CreateRegExec {
     pub fn execute(
         reg_name: &str,
@@ -49,7 +56,13 @@ impl CreateRegExec {
 
         let ciphertext = aead::encrypt(pwd_key, nonce, data_as_bytes)?;
 
-        CreateRegExec::write_encrypted_data(vault.pathfP.as_ref().unwrap(), ciphertext)?;
+        CreateRegExec::write_encrypted_data(vault.pathfP.as_ref().unwrap(), &ciphertext, WriteMode::Vault)?;
+
+        Auth::create_at(&vault.p)?;
+
+        let auth = Auth::load(&vault.p)?;
+
+        CreateRegExec::write_encrypted_data(&auth.file, &ciphertext, WriteMode::Auth);
 
         println!(
             "\nVault Created Successfully!\nUse CONNECT '{}' to connect to your register",
@@ -109,12 +122,22 @@ impl CreateRegExec {
         Ok((reg_to_bytes, key))
     }
 
-    pub fn write_encrypted_data(p: &PathBuf, ciphertext: Vec<u8>) -> Result<(), DynError> {
+    pub fn write_encrypted_data(p: &PathBuf, ciphertext: &Vec<u8>, write_mode: WriteMode) -> Result<(), DynError> {
+        let pos:u64;
+        match write_mode {
+            WriteMode::Vault => {
+                pos = 34;
+            }
+            WriteMode::Auth => {
+                pos = 0;
+            }
+        }
+
         let mut r_vault = OpenOptions::new().write(true).read(true).open(p)?;
         // [4] [2] [16] [12]
         //  4---6---22---34
         // Position 34 marks the beginning of the empty dataset.
-        r_vault.seek(SeekFrom::Start((34)));
+        r_vault.seek(SeekFrom::Start((pos)));
         r_vault.write_all(&ciphertext)?;
         // Flushing data slowly to disk but because we're during a critical moment,
         // we need to force the flush to ensure that all data has been written.
