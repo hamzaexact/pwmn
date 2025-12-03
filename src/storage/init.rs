@@ -1,5 +1,5 @@
 use crate::error::{self, InitErr};
-use crate::storage::parentvault::ParentVault;
+
 use std::{
     env,
     fs::{self, File, create_dir_all as mksafe_dir},
@@ -7,22 +7,20 @@ use std::{
 };
 
 // Private root vault to handle all other child files.
-pub const PARENT_FD_NAME: &str = ".pwmn"; // Parent Folder Name, handled by INIT
-pub const PARENT_FL_NAME: &str = "rvault.bin"; // Parent File Name
+pub const ROOT_REG: &str = ".pwmn"; // Parent Folder Name, handled by INIT
 
 pub fn init() -> Result<(), Box<dyn std::error::Error>> {
     let home = dirs_next::home_dir().ok_or(error::HomeDirErr::InvalidHomeDir)?;
 
-    let root_folder = home.join(PARENT_FD_NAME);
+    let root_folder = home.join(ROOT_REG);
     if root_folder.try_exists()? {
-        return Err(Box::new(InitErr::VaultAlreadyExists));
+        return Err(Box::new(InitErr::RootVaultAlreadyExists));
     }
     mksafe_dir(&root_folder)?;
-    ParentVault::new()?;
     let s_msg = format!(
-        "initialzed empty vault repository in {}/{}",
+        "Initialized an empty  repository in {}/{}",
         env::var("HOME").unwrap(),
-        PARENT_FD_NAME
+        ROOT_REG
     );
     println!("{s_msg}");
     Ok(())

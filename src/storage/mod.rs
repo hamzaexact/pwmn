@@ -1,5 +1,6 @@
-pub mod childvault;
 pub mod init;
 pub mod parentvault;
 pub mod types;
-pub mod vault_utl;
+pub mod vault;
+pub mod vaultmanager;
+pub mod vaultmod;
