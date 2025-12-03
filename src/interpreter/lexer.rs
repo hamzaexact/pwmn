@@ -43,6 +43,7 @@ pub enum TokenKind {
     Disable,
     Disconnect,
     Enable,
+    Entry,
     From,
     Generate,
     Generated,
@@ -71,6 +72,8 @@ pub enum TokenKind {
     Identifier(String),
     String(String),
     Number(i32),
+
+    EmptyIdentifer,
 
     Semicolon,
     Log,
@@ -284,6 +287,7 @@ impl<'a> Lexer<'a> {
                         "DISABLE" => TokenKind::Disable,
                         "DISCONNECT" => TokenKind::Disconnect,
                         "ENABLE" => TokenKind::Enable,
+                        "ENTRT" => TokenKind::Entry,
                         "FROM" => TokenKind::From,
                         "GENERATE" => TokenKind::Generate,
                         "GENERATED" => TokenKind::Generated,

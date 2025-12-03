@@ -1,5 +1,5 @@
 use crate::error::ParserErr;
-use crate::interpreter::ast::{self, Expr::Statment as ExprStmt, Stmt};
+use crate::interpreter::ast::{self, Expr::Statment as ExprStmt, Stmt, Inner};
 use crate::interpreter::lexer::{LexResult, Span, Token, TokenKind};
 use crate::interpreter::{ast::DropTree, lexer};
 use std::error::Error;
@@ -19,23 +19,7 @@ impl<'t> Parser<'t> {
             pos: 0,
         };
         let res = parser.parse_expression()?;
-        match res {
-            ast::Expr::Statment(ast::Stmt::Init) => Ok(ast::Stmt::Init),
-            ast::Expr::Statment(ast::Stmt::Create { reg_name }) => {
-                Ok(ast::Stmt::Create { reg_name: reg_name })
-            }
-            ast::Expr::Statment(ast::Stmt::Connect { reg_name }) => {
-                Ok(ast::Stmt::Connect { reg_name: reg_name })
-            }
-
-            ast::Expr::Statment(ast::Stmt::DropTree(DropTree::Reg(s))) => {
-                Ok(ast::Stmt::DropTree(DropTree::Reg((s))))
-            }
-            ast::Expr::Statment(ast::Stmt::DropTree(DropTree::Reg(s))) => {
-                Ok(ast::Stmt::DropTree(DropTree::Ent((s))))
-            }
-            _ => todo!(),
-        }
+        Ok(res.extract()?)
     }
 
     fn peek_token(&self) -> Option<(Token, TokenKind)> {
