@@ -1,19 +1,19 @@
 use std::{
-    fs::{write, OpenOptions},
+    fs::{OpenOptions, write},
     io::{Read, Seek, SeekFrom},
     path::PathBuf,
 };
 
 use super::create;
 use crate::{
-    encryption::{aead::decrypt, enc_utl::KdfMode, kdf::{derive_fast_key, derive_slow_key}},
+    encryption::{
+        aead::decrypt,
+        enc_utl::KdfMode,
+        kdf::{derive_fast_key, derive_slow_key},
+    },
     error,
     session::SessionConn,
-    storage::{
-        self,
-        types::Register,
-        vault::{VAULT_N}, vaultmod::VaultMod,
-    },
+    storage::{self, types::Register, vault::VAULT_N, vaultmod::VaultMod},
 };
 type DynErr = Box<dyn std::error::Error>;
 
@@ -23,13 +23,15 @@ impl VaultConnection {
         // Since the logic of validation is the same for both registering and reconnecting
         // to a database or system, it's generally more efficient to reuse existing code
         // rather than re-implementing it.
+        //
+        //
         create::CreateRegExec::pre_validation(reg_name, &session)?;
 
-        // Check if Parent Exists
+        // Check if ROOT Exists
         //            \
         //             \
         //              \
-        //            P_VAULT
+        //          VAULT FOLDER
         //
         //
         // If not, return an error indicating that the repository must be initialized.
@@ -45,6 +47,7 @@ impl VaultConnection {
 
         // We validate the child file path as well to prevent
         // reading unknown or unmatched file types.
+        //
         let mut vault = manager.external_vault_load(&child_p)?;
 
         vault.validate_f_header();
@@ -61,7 +64,10 @@ impl VaultConnection {
     }
 
     pub fn connect(vault_mod: &mut VaultMod) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        let mut vault = OpenOptions::new().read(true).write(true).open(&vault_mod.pathfP.as_ref().unwrap())?;
+        let mut vault = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&vault_mod.pathfP.as_ref().unwrap())?;
         let mut salt = vault_mod.load_salt()?;
         let mut nonce = vault_mod.load_nonce()?;
         let mut encrypted = Vec::new();
