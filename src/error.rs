@@ -321,7 +321,7 @@ impl std::fmt::Display for EncryptionErr {
 
 impl std::fmt::Display for DecryptionErr {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Invalid password or corrupted vault data. Try Again!")
+        write!(f, "Invalid password. Try Again!")
     }
 }
 
@@ -382,6 +382,14 @@ pub enum FileReqErr {
         "Unable to determine if the path exists. \nThis may be due to missing permissions, a symbolic link loop, an invalid or unreachable file system, or another I/O error."
     )]
     UnexpectedIOError,
+}
+
+#[derive(Debug, Error)]
+pub enum AuthErr {
+    #[error(
+        "The Auth file does not exist, which may indicate that the vault folder has been damaged or tampered with."
+    )]
+    AuthFileNotFound,
 }
 fn err_formatter(
     err_title: &str,
