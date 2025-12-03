@@ -65,26 +65,21 @@ impl VaultMod {
         self.nonce = Some(nonce);
         Ok(nonce)
     }
-}
 
-pub enum GetFile {
-    ParentFolder,
-    ParentFile,
-}
+    pub fn validate_f_header(&self) -> Result<(), DynamicErr> {
+        let mut t_file = OpenOptions::new().read(true).open(self.pathfP.as_ref().unwrap())?;
+        t_file.seek(SeekFrom::Start(0));
+        let mut t_file_magic = [0u8; 4];
+        let mut t_file_version = [0u8; 2];
+        t_file.read_exact(&mut t_file_magic)?;
+        t_file.read_exact(&mut t_file_version)?;
+        if t_file_magic != *b"PWMN" {
+            return Err(Box::new(VaultValidationErr::MismatchedFileHeader));
+        }
 
-pub fn validate_f_header(p: &PathBuf) -> Result<(), DynamicErr> {
-    let mut t_file = OpenOptions::new().read(true).open(p)?;
-    t_file.seek(SeekFrom::Start(0));
-    let mut t_file_magic = [0u8; 4];
-    let mut t_file_version = [0u8; 2];
-    t_file.read_exact(&mut t_file_magic)?;
-    t_file.read_exact(&mut t_file_version)?;
-    if t_file_magic != *b"PWMN" {
-        return Err(Box::new(VaultValidationErr::MismatchedFileHeader));
+        if u16::from_le_bytes(t_file_version) != 1 {
+            return (Err(Box::new(error::VaultValidationErr::MismatchedFileHeader)));
+        }
+        Ok(())
     }
-
-    if u16::from_le_bytes(t_file_version) != 1 {
-        return (Err(Box::new(error::VaultValidationErr::MismatchedFileHeader)));
-    }
-    Ok(())
 }
