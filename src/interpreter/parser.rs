@@ -43,7 +43,7 @@ impl<'t> Parser<'t> {
                 } else {
                     return Err(ParserErr::TypeMismatch {
                         input: self.query.to_string(),
-                        expectedkind: expected_token,
+                        expectedkind: vec![expected_token],
                         givenkind: token_kind.clone(),
                         span: whole_token.span.clone(),
                     });
@@ -109,6 +109,10 @@ impl<'t> Parser<'t> {
     }
 
     fn parse_factor(&mut self) -> Result<ast::Expr, ParserErr> {
+        let default_span = Span {
+            start: self.query.len(),
+            end: self.query.len() + 1,
+        };
         let token = self.peek_token();
         match token {
             Some(tk) => {
@@ -194,7 +198,6 @@ impl<'t> Parser<'t> {
                             Some((token, kind)) => {
                                 if kind == TokenKind::Register {
                                     self.consume(TokenKind::Register)?;
-                                    dbg!(&self.tokens);
                                     match self.peek_token() {
                                         Some((t, k)) => match k {
                                             TokenKind::Identifier(reg_name) => {
@@ -237,6 +240,13 @@ impl<'t> Parser<'t> {
 
                                         None => unreachable!(),
                                     }
+                                } else {
+                                    return Err(ParserErr::TypeMismatch {
+                                        input: self.query.to_string(),
+                                        expectedkind: vec![TokenKind::Entry, TokenKind::Register],
+                                        givenkind: kind,
+                                        span: token.span,
+                                    });
                                 }
                             }
 
