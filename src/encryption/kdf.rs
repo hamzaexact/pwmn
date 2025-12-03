@@ -22,7 +22,7 @@ pub fn derive_slow_key(str: &str, salt: &[u8]) -> [u8; 32] {
 
 pub fn derive_fast_key(str: &str, salt: &[u8]) -> [u8; 32] {
     let mut m_cost: u32;
-    let param = Params::new(16*1024, 1, PARALLELISM, None).unwrap();
+    let param = Params::new(16 * 1024, 1, PARALLELISM, None).unwrap();
 
     let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, param);
     let mut output = [0u8; 32];

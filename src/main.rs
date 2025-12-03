@@ -12,6 +12,7 @@ use p_std::uid::Uid;
 mod session;
 mod statements;
 mod storage;
+use crate::encryption::kdf::{derive_fast_key, derive_slow_key};
 use crate::engine::Executor;
 use dirs_next;
 use hex;
@@ -28,11 +29,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 match Executor::execute(&cmd, &mut session_status) {
                     Ok(_) => {}
                     Err(e) => {
-                        println!("ERROR: {}", e);
+                        println!("\nERROR: {}", e);
                     }
                 }
                 let end = start.elapsed();
-                println!("\nTime elapsed: {:.3} ms", end.as_secs_f64() * 1000.0);
+                println!("\nTime elapsed: {:.2} s", end.as_secs_f64());
                 cmd
             }
             Err(ReadlineError::Interrupted) => {
