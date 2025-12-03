@@ -1,5 +1,8 @@
 use crate::{
-    encryption::{aead::decrypt, kdf::{derive_fast_key, derive_slow_key}},
+    encryption::{
+        aead::decrypt,
+        kdf::{derive_fast_key, derive_slow_key},
+    },
     error::{AuthErr, FileReqErr},
 };
 use std::{fs::OpenOptions, io::Read, path::PathBuf};

@@ -22,6 +22,13 @@ use zeroize;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut rl = DefaultEditor::new()?;
     let mut session_status = SessionConn::new()?;
+    let arr = ["hamza", "something"];
+    let result = arr
+        .iter()
+        .map(|s| format!("\"{s}\""))
+        .collect::<Vec<_>>()
+        .join(", ");
+
     loop {
         let command = match read_command(&mut rl) {
             Ok(cmd) => {
