@@ -4,7 +4,10 @@ use crate::error::{self, CreateErr, SessionErr};
 use crate::session::SessionConn;
 use crate::storage::init::{PARENT_FD_NAME, PARENT_FL_NAME};
 use crate::storage::{self, vault_utl};
-use crate::{encryption::kdf::derive_slow_key, encryption::kdf::derive_fast_key, storage::parentvault::ParentVault};
+use crate::{
+    encryption::kdf::derive_fast_key, encryption::kdf::derive_slow_key,
+    storage::parentvault::ParentVault,
+};
 use bincode;
 use rpassword;
 use serde::{Deserialize, Serialize};

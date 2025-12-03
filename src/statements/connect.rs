@@ -6,7 +6,7 @@ use std::{
 
 use super::create;
 use crate::{
-    encryption::{aead::decrypt, enc_utl::KdfMode, kdf::derive_slow_key, kdf::derive_fast_key},
+    encryption::{aead::decrypt, enc_utl::KdfMode, kdf::derive_fast_key, kdf::derive_slow_key},
     error,
     session::SessionConn,
     storage::{
@@ -22,8 +22,9 @@ type DynErr = Box<dyn std::error::Error>;
 pub struct VaultConnection;
 impl VaultConnection {
     pub fn execute(reg_name: &str, session: &mut SessionConn) -> Result<(), DynErr> {
-        // Since the logic of validation remains the same for both creating and connecting to the register,
-        // It's generally better to reuse function.
+        // Since the logic of validation is the same for both registering and reconnecting
+        // to a database or system, it's generally more efficient to reuse existing code
+        // rather than re-implementing it.
         create::CreateRegExec::pre_validation(reg_name, &session)?;
 
         // Check if Parent Exists
@@ -33,7 +34,7 @@ impl VaultConnection {
         //            P_VAULT
         //
         //
-        // If not, return an error stating that the repository needs to be initialized (INIT).
+        // If not, return an error indicating that the repository must be initialized.
         //
         storage::vault_utl::is_parent_vault_exisits()?;
 
@@ -43,11 +44,12 @@ impl VaultConnection {
         //             \
         //          P_VAULT Exists
         //
-        // It's highly unlikely that this function will return an error. However, if it does,
-        // it suggests someone is manipulating the binary file or has removed it entirely.
+        // It's highly unlivkely that this function will return an error.
+        // However, if it does, it suggests someone is manipulating the
+        // binary file or has removed it entirely.
         // A possible solution is to iterate over all folders in the root directory,
-        // decrypt their hashes, and add them to R_VAULT as new keys (ORDER DOES NOT MATTER).
-        // This task can be implemented later.
+        // decrypt their hashes, and add them to R_VAULT as new keys (though order doesn't matter).
+        // TODO! () This task can be implemented later.
         let parent_p = storage::vault_utl::is_parent_f_exists()?;
 
         // Since the parent folder and its files both exist,
@@ -133,8 +135,6 @@ impl VaultConnection {
         // deallocated the key later.
         Ok(req_p)
     }
-
-    // Bug Fix: the key that was used as an input to ChaChaPoly was from the register name not the actual password, which lead to not accepting the password of the vault
 
     pub fn connect(p: &PathBuf) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let mut vault = OpenOptions::new().read(true).write(true).open(p)?;
