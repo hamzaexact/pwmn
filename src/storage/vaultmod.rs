@@ -23,6 +23,7 @@ use std::{
 
 type DynamicErr = Box<dyn std::error::Error>;
 
+#[derive(Debug)]
 pub struct VaultMod {
     pub p: PathBuf,
     pub pathfP: Option<PathBuf>,
@@ -67,7 +68,9 @@ impl VaultMod {
     }
 
     pub fn validate_f_header(&self) -> Result<(), DynamicErr> {
-        let mut t_file = OpenOptions::new().read(true).open(self.pathfP.as_ref().unwrap())?;
+        let mut t_file = OpenOptions::new()
+            .read(true)
+            .open(self.pathfP.as_ref().unwrap())?;
         t_file.seek(SeekFrom::Start(0));
         let mut t_file_magic = [0u8; 4];
         let mut t_file_version = [0u8; 2];
