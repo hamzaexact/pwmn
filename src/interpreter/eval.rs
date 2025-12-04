@@ -1,5 +1,5 @@
 use crate::interpreter::ast::{self, DropTree, Stmt};
-use crate::session::sessionConn::SessionConn;
+use crate::session::session_conn::SessionConn;
 use crate::statements::{connect, create, disconnect, drop};
 use crate::storage::init;
 pub trait eval {

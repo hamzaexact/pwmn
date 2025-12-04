@@ -1,5 +1,5 @@
 use crate::interpreter::ast::DropTree;
-use crate::session::{SessionConn, sessionConn};
+use crate::session::{SessionConn, session_conn};
 use crate::storage::enc_auth::Auth;
 use crate::{
     encryption::kdf::derive_fast_key,
@@ -20,7 +20,7 @@ pub struct Drop;
 impl Drop {
     pub fn execute(
         obj_drp: DropTree,
-        session: &sessionConn::SessionConn,
+        session: &session_conn::SessionConn,
     ) -> Result<(), Box<dyn std::error::Error>> {
         match obj_drp {
             DropTree::Reg(s) => {

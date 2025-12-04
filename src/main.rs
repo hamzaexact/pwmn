@@ -16,7 +16,7 @@ use crate::encryption::kdf::{derive_fast_key, derive_slow_key};
 use crate::engine::Executor;
 use dirs_next;
 use hex;
-use session::sessionConn::SessionConn;
+use session::session_conn::SessionConn;
 use zeroize;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

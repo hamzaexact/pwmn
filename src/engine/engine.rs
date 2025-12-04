@@ -3,7 +3,7 @@ use crate::interpreter::Span;
 use crate::interpreter::eval::eval;
 use crate::interpreter::lexer;
 use crate::interpreter::parser;
-use crate::session::sessionConn::SessionConn;
+use crate::session::session_conn::SessionConn;
 use crate::storage::init;
 
 type DynamicError = Box<dyn std::error::Error>;
